@@ -1,0 +1,7 @@
+esphome/.esphome/
+esphome/secrets.yaml
+/*
+!/docker-compose.yml
+!/lektor-web/
+!/esphome/
+!/.gitignore

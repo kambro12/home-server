@@ -1,0 +1,322 @@
+networks:
+  proxy-network:
+    name: proxy-network
+  serwer-network:
+    name: serwer-network
+
+services:
+  # Home Assistant (Zintegrowany z Docker Socket)
+  homeassistant:
+    container_name: homeassistant
+    image: "ghcr.io/home-assistant/home-assistant:stable"
+    restart: unless-stopped
+    volumes:
+      - /mnt/media:/mnt/media:ro
+      - ./config_homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ=Europe/Warsaw
+    ports:
+      - "8123:8123"
+    networks:
+      - proxy-network
+
+  # Tunel Cloudflare
+  cloudflared:
+    container_name: cloudflared
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token eyJhIjoiNjk5NTQ2NzNhMjBlYzhhZjUyYzliMjRjYjk5ZTViODEiLCJ0IjoiY2E3Nzc1YWUtMWZhZS00OGVmLTkwYWYtYTFlYTQxN2ExYzcwIiwicyI6Ik5qUXpNR05qWkRRdE5UUTBaQzAwTm1VMUxUbGpObVF0WVdGaU0ySXlPRGcyWldZNCJ9
+    networks:
+      - proxy-network
+    depends_on:
+      - homeassistant
+
+  # --- LOCAL DASHBOARD (Nginx) ---
+  dashboard:
+    image: nginx:alpine
+    container_name: local_dashboard
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./dashboard:/usr/share/nginx/html:ro
+    networks:
+      - serwer-network
+
+  # --- MULTIMEDIA ---
+  jellyfin:
+    image: jellyfin/jellyfin:latest
+    container_name: jellyfin
+    restart: unless-stopped
+    ports:
+      - "8096:8096"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - LANG=pl_PL.UTF-8
+      - LC_ALL=pl_PL.UTF-8
+    volumes:
+      - ./config_jellyfin:/config
+      - ./cache_jellyfin:/cache
+      - /mnt/media:/mnt/media
+    networks:
+      - serwer-network
+    devices:
+      - /dev/dri:/dev/dri
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    restart: unless-stopped
+    ports:
+      - "5055:5055"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+    volumes:
+      - ./config_jellyseerr:/app/config
+    networks:
+      - serwer-network
+
+  music-assistant:
+    image: ghcr.io/music-assistant/server:stable
+    container_name: music-assistant
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./music-assistant:/data
+      - /mnt/media:/mnt/media
+
+  # --- POBIERANIE I AUTOMATYZACJA ---
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    container_name: qbittorrent
+    restart: unless-stopped
+    ports:
+      - "8282:8282"
+      - "6881:6881"
+      - "6881:6881/udp"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - WEBUI_PORT=8282
+    volumes:
+      - ./config_qbittorrent:/config
+      - /mnt/media:/mnt/media
+    networks:
+      - serwer-network
+
+  prowlarr:
+    image: lscr.io/linuxserver/prowlarr:latest
+    container_name: prowlarr
+    restart: unless-stopped
+    ports:
+      - "9696:9696"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+    volumes:
+      - ./config_prowlarr:/config
+    networks:
+      - serwer-network
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    restart: unless-stopped
+    ports:
+      - "8191:8191"
+    shm_size: '256mb'
+    environment:
+      - LOG_LEVEL=info
+      - CAPTCHA_SOLVER=none
+      - TZ=Europe/Warsaw
+      - FLARESOLVERR_TIMEOUT=120000
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    networks:
+      - serwer-network
+
+  sonarr:
+    image: lscr.io/linuxserver/sonarr:latest
+    container_name: sonarr
+    restart: unless-stopped
+    ports:
+      - "8989:8989"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+    volumes:
+      - ./config_sonarr:/config
+      - /mnt/media:/mnt/media
+    networks:
+      - serwer-network
+
+  radarr:
+    image: lscr.io/linuxserver/radarr:latest
+    container_name: radarr
+    restart: unless-stopped
+    ports:
+      - "7878:7878"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+    volumes:
+      - ./config_radarr:/config
+      - /mnt/media:/mnt/media
+    networks:
+      - serwer-network
+
+  # --- INNE USŁUGI ---
+  esphome:
+    image: esphome/esphome:latest
+    container_name: esphome
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./esphome:/config
+    environment:
+      - ESPHOME_DASHBOARD_USE_PING=true
+  nginx-cors:
+    image: nginx:alpine
+    container_name: nginx-cors
+    restart: unless-stopped
+    ports:
+      - "2345:2345"
+    volumes:
+      - ./nginx-cors.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - serwer-network
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - DOCKER_API_VERSION=1.40
+      - TZ=Europe/Warsaw
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=86400
+    networks:
+      - serwer-network
+
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: go2rtc
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./go2rtc:/config
+
+  filebrowser:
+    image: filebrowser/filebrowser:latest
+    container_name: filebrowser
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    volumes:
+      - /mnt/media:/srv
+      - ./filebrowser:/database
+    environment:
+      - FB_DATABASE=/database/filebrowser.db
+    networks:
+      - serwer-network
+
+  memos:
+    image: neosmemo/memos:stable
+    container_name: memos
+    restart: unless-stopped
+    ports:
+      - "5230:5230"
+    volumes:
+      - ./memos:/var/opt/memos
+    networks:
+      - serwer-network
+  metube:
+    image: ghcr.io/alexta69/metube:latest
+    container_name: metube
+    restart: unless-stopped
+    ports:
+      - "8085:8081"
+    volumes:
+      - /mnt/media/muzyka:/downloads
+    networks:
+      - serwer-network
+  sillytavern:
+    image: ghcr.io/sillytavern/sillytavern:latest
+    container_name: sillytavern
+    restart: unless-stopped
+    environment:
+      - ZS_DISABLE_WHITELIST=true
+      - ZS_ENABLE_USER_ACCOUNTS=false
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./sillytavern/config:/home/node/app/config
+      - ./sillytavern/data:/home/node/app/data
+    networks:
+      - serwer-network
+  bazarr:
+    image: lscr.io/linuxserver/bazarr:latest
+    container_name: bazarr
+    restart: unless-stopped
+    ports:
+      - "6767:6767"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+    volumes:
+      - ./config_bazarr:/config
+      - /mnt/media:/mnt/media
+    networks:
+      - serwer-network
+  piper:
+    image: lscr.io/linuxserver/piper:latest
+    container_name: piper
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - PIPER_VOICE=pl_PL-jarvis_wg_glos-medium
+# - PIPER_VOICE=pl_PL-jarvis_wg_glos-medium
+    volumes:
+      - ./config_piper:/config
+    ports:
+     # - "5000:10200"
+      - "10200:10200"
+    networks:
+      - serwer-network
+    restart: unless-stopped
+
+  lektor-web:
+    build:
+      context: ./lektor-web
+      dockerfile: Dockerfile
+    container_name: lektor-web
+    restart: unless-stopped
+    ports:
+      - '5000:5000'
+    volumes:
+      - /mnt/media:/mnt/media
+    environment:
+      - TZ=Europe/Warsaw
+      - LANG=C.UTF-8
+      - LC_ALL=C.UTF-8
+      - PIPER_HOST=piper
+      - PIPER_PORT=10200
+    networks:
+      - serwer-network
+    depends_on:
+      - piper
