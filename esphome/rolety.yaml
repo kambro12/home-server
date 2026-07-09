@@ -1,0 +1,302 @@
+substitutions:
+ # stepper_dir_pin_inverted: 'false'
+  #stepper_dir_pin: GPIO19
+  #stepper_step_pin: GPIO18
+  #stepper_enable_pin: GPIO21
+  stepper_max_speed: '350'
+  # The number of steps for the blinds to go from fully closed to fully open (from HA's perspective)
+  ha_open_range_steps: '1000'
+  # The number of extra steps to drive into the physical end-stop to ensure it's fully closed and to recalibrate.
+  closed_overshoot_steps: '100'
+
+esphome:
+  name: rolety
+  friendly_name: Rolety
+  comment: Sterowanie żaluzjami w salonie
+  on_boot:
+    - priority: -200.0
+      then:
+        # On boot, restore the stepper's position based on the last known state from Home Assistant.
+        # We map the HA position (0.0-1.0) to the stepper's coordinate system (0 to ha_open_range_steps).
+        - stepper.report_position:
+            id: stepper_motor_okno
+            position: !lambda return int(id(blinds_cover_okno).position * $ha_open_range_steps);
+        - stepper.set_target:
+            id: stepper_motor_okno
+            target: !lambda return int(id(blinds_cover_okno).position * $ha_open_range_steps);
+
+        - stepper.report_position:
+            id: stepper_motor_tv
+            position: !lambda return int(id(blinds_cover_tv).position * $ha_open_range_steps);
+        - stepper.set_target:
+            id: stepper_motor_tv
+            target: !lambda return int(id(blinds_cover_tv).position * $ha_open_range_steps);
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "OHSzDsCoTydznVLoSZPUUtbBLCSjnSv1tKQNhAWOcmo="
+
+ota:
+  - platform: esphome
+    password: "3ff1e56310def6b5566fc29056d16b87"
+
+wifi:
+  networks:
+  - ssid: !secret wifi_ssid
+    password: !secret wifi_password
+  use_address: 192.168.1.189
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Rolety1 Fallback Hotspot"
+    password: "dAxEjVb1hHQj"
+captive_portal:
+#package:
+ # blinds: !include /config/Blinds/SalonTV
+stepper:
+  - platform: a4988
+    id: stepper_motor_okno
+    step_pin: GPIO18
+    dir_pin: 
+      number: GPIO19
+      inverted: true
+    sleep_pin: 
+      number: GPIO21
+      inverted: true
+    max_speed: $stepper_max_speed
+
+  - platform: a4988
+    id: stepper_motor_tv
+    step_pin: GPIO16
+    dir_pin: 
+      number: GPIO17
+      inverted: false
+    sleep_pin: 
+      number: GPIO5
+      inverted: true  # using enable pin
+    max_speed: $stepper_max_speed
+
+cover:
+  - platform: template
+    name: Zaluzje okno
+    id: blinds_cover_okno
+    open_action:
+      then:
+        - logger.log: "Opening"
+        - script.execute:
+            id: blinds_cover_set_position_okno
+            pos: 1.0 # Set position to fully open
+        - script.wait: blinds_cover_set_position_okno
+    close_action:
+      then:
+        - logger.log: "Closing and Recalibrating okno"
+        # 1. Drive to the physical end-stop including overshoot.
+        - stepper.set_target:
+            id: stepper_motor_okno
+            target: !lambda 'return int(-1 * $closed_overshoot_steps);'
+        - while:
+            condition:
+              lambda: 'return id(stepper_motor_okno).current_position != id(stepper_motor_okno).target_position;'
+            then:
+              # Report progress to HA. We map the range from 0-500 back to 0-1 for display.
+              - cover.template.publish:
+                  id: blinds_cover_okno
+                  position: !lambda 'return std::max(0.0f, (float)id(stepper_motor_okno).current_position / $ha_open_range_steps);'
+                  current_operation: 'CLOSING'
+              - delay: 100ms
+        # 2. The motor is now at the physical end-stop. Reset its internal position to 0.
+        - stepper.report_position:
+            id: stepper_motor_okno
+            position: 0
+        # 3. Report the final state to Home Assistant.
+        - cover.template.publish:
+            id: blinds_cover_okno
+            position: 0.0
+            current_operation: IDLE
+    position_action:
+      then:
+        - logger.log: "Positioning"
+        - script.execute:
+            id: blinds_cover_set_position_okno
+            pos: !lambda 'return pos;'
+        - script.wait: blinds_cover_set_position_okno
+    stop_action:
+      then:
+        - logger.log: "Stopping"
+        - script.execute:
+            id: blinds_cover_set_position_okno
+            # Convert current stepper position (0-500) to HA's 0.0-1.0 scale and move to that position (which stops it)
+            pos: !lambda 'return std::max(0.0f, std::min(1.0f, (float)id(stepper_motor_okno).current_position / $ha_open_range_steps));'
+        - script.wait: blinds_cover_set_position_okno
+    has_position: true
+    device_class: blind
+
+  - platform: template
+    name: Zaluzje tv
+    id: blinds_cover_tv
+    open_action:
+      then:
+        - logger.log: "Opening"
+        - script.execute:
+            id: blinds_cover_set_position_tv
+            pos: 1.0 # Set position to fully open
+        - script.wait: blinds_cover_set_position_tv
+    close_action:
+      then:
+        - logger.log: "Closing and Recalibrating tv"
+        # 1. Drive to the physical end-stop including overshoot.
+        - stepper.set_target:
+            id: stepper_motor_tv
+            target: !lambda 'return int(-1 * $closed_overshoot_steps);'
+        - while:
+            condition:
+              lambda: 'return id(stepper_motor_tv).current_position != id(stepper_motor_tv).target_position;'
+            then:
+              # Report progress to HA. We map the range from 0-500 back to 0-1 for display.
+              - cover.template.publish:
+                  id: blinds_cover_tv
+                  position: !lambda 'return std::max(0.0f, (float)id(stepper_motor_tv).current_position / $ha_open_range_steps);'
+                  current_operation: 'CLOSING'
+              - delay: 100ms
+        # 2. The motor is now at the physical end-stop. Reset its internal position to 0.
+        - stepper.report_position:
+            id: stepper_motor_tv
+            position: 0
+        # 3. Report the final state to Home Assistant.
+        - cover.template.publish:
+            id: blinds_cover_tv
+            position: 0.0
+            current_operation: IDLE
+    position_action:
+      then:
+        - logger.log: "Positioning"
+        - script.execute:
+            id: blinds_cover_set_position_tv
+            pos: !lambda 'return pos;'
+        - script.wait: blinds_cover_set_position_tv
+    stop_action:
+      then:
+        - logger.log: "Stopping"
+        - script.execute:
+            id: blinds_cover_set_position_tv
+            # Convert current stepper position (0-500) to HA's 0.0-1.0 scale and move to that position (which stops it)
+            pos: !lambda 'return std::max(0.0f, std::min(1.0f, (float)id(stepper_motor_tv).current_position / $ha_open_range_steps));'
+        - script.wait: blinds_cover_set_position_tv
+    has_position: true
+    device_class: blind
+
+
+script:
+  - id: blinds_cover_set_position_okno
+    parameters:
+      pos: float
+    mode: restart
+    then:
+      - stepper.set_target:
+          id: stepper_motor_okno
+          # Map HA position (0.0-1.0) to the stepper's coordinate system (0-500)
+          target: !lambda 'return int(pos * $ha_open_range_steps);'
+      - while:
+          condition:
+            lambda: 'return id(stepper_motor_okno).current_position != id(stepper_motor_okno).target_position;'
+          then:
+            - cover.template.publish:
+                id: blinds_cover_okno
+                # Report current position back to HA, mapping the stepper's position (0-500) back to HA's 0.0-1.0 scale
+                position: !lambda 'return std::max(0.0f, std::min(1.0f, (float)id(stepper_motor_okno).current_position / $ha_open_range_steps));'
+                current_operation: !lambda "return id(stepper_motor_okno).current_position < id(stepper_motor_okno).target_position ? COVER_OPERATION_OPENING : COVER_OPERATION_CLOSING;"
+            - delay: 100 ms
+      - cover.template.publish:
+          id: blinds_cover_okno
+          position: !lambda 'return std::max(0.0f, std::min(1.0f, (float)id(stepper_motor_okno).target_position / $ha_open_range_steps));'
+          current_operation: IDLE
+ 
+
+  - id: blinds_cover_set_position_tv
+    parameters:
+      pos: float
+    mode: restart
+    then:
+      - stepper.set_target:
+          id: stepper_motor_tv
+          # Map HA position (0.0-1.0) to the stepper's coordinate system (0-500)
+          target: !lambda 'return int(pos * $ha_open_range_steps);'
+      - while:
+          condition:
+            lambda: 'return id(stepper_motor_tv).current_position != id(stepper_motor_tv).target_position;'
+          then:
+            - cover.template.publish:
+                id: blinds_cover_tv
+                # Report current position back to HA, mapping the stepper's position (0-500) back to HA's 0.0-1.0 scale
+                position: !lambda 'return std::max(0.0f, std::min(1.0f, (float)id(stepper_motor_tv).current_position / $ha_open_range_steps));'
+                current_operation: !lambda "return id(stepper_motor_tv).current_position < id(stepper_motor_tv).target_position ? COVER_OPERATION_OPENING : COVER_OPERATION_CLOSING;"
+            - delay: 100 ms
+      - cover.template.publish:
+          id: blinds_cover_tv
+          position: !lambda 'return std::max(0.0f, std::min(1.0f, (float)id(stepper_motor_tv).target_position / $ha_open_range_steps));'
+          current_operation: IDLE
+
+
+button:
+  - platform: template
+    name: Reset position okno
+    id: blinds_reset_okno
+    entity_category: "config"
+    on_press:
+      # This action is identical to the close_action, ensuring manual recalibration works the same way.
+      - stepper.set_target:
+          id: stepper_motor_okno
+          target: !lambda 'return int(-1 * $closed_overshoot_steps);'
+      - while:
+          condition:
+            lambda: 'return id(stepper_motor_okno).current_position != id(stepper_motor_okno).target_position;'
+          then:
+            - delay: 50ms
+      - stepper.report_position:
+          id: stepper_motor_okno
+          position: 0
+      - cover.template.publish:
+          id: blinds_cover_okno
+          position: 0.0
+          current_operation: IDLE
+
+  - platform: template
+    name: Reset position TV
+    id: blinds_reset_tv
+    entity_category: "config"
+    on_press:
+      - stepper.set_target:
+          id: stepper_motor_tv
+          target: !lambda 'return int(-1 * $closed_overshoot_steps);'
+      - while:
+          condition:
+            lambda: 'return id(stepper_motor_tv).current_position != id(stepper_motor_tv).target_position;'
+          then:
+            - delay: 50ms
+      - stepper.report_position:
+          id: stepper_motor_tv
+          position: 0
+      - cover.template.publish:
+          id: blinds_cover_tv
+          position: 0.0
+          current_operation: IDLE
+
+sensor:
+  - platform: dht
+    pin: GPIO15
+    temperature:
+      name: "Temperatura Salon"
+      filters:
+        - offset: -1.5
+    humidity:
+      name: "Wilgotność Salon"
+    update_interval: 60s
+    model: DHT11

@@ -1,0 +1,69 @@
+esphome:
+  name: kuchnia
+  friendly_name: Kuchnia
+  comment: Sterowanie oswietleniem kuchni
+esp8266:
+  board: d1_mini
+#  board: esp01_1m 
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "DM2UKH7jZuYPrSxhszFbuSxdXedyhpFB2FY4LwAksvQ="
+
+ota:
+  - platform: esphome
+    password: "c45d4e05540948e6d0ed7e87328cd8b1"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  min_auth_mode: WPA2
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Kuchnia Fallback Hotspot"
+    password: "R8N9yFpbDL6T"
+  use_address: 192.168.1.194
+captive_portal:
+
+switch:
+  # Przekaźniki
+  - platform: gpio
+    inverted: True
+    name: "Wentylator Kuchnia"
+    pin: D4 # GPIO2
+    id: wentylator_kuchnia
+    on_turn_on:
+      - delay: 30min
+      - switch.turn_off: wentylator_kuchnia
+  - platform: gpio
+    inverted: true
+    name: "Halogeny nad blatem"
+    pin: D3 # GPIO0
+    id: halogeny_nad_blatem
+
+
+output:
+  - platform: esp8266_pwm
+    pin: D2 # GPIO4
+    id: mono_output_1
+    frequency: 1000 Hz
+  - platform: esp8266_pwm
+    pin: D1 # GPIO5
+    id: mono_output_2
+    frequency: 1000 Hz
+
+light:
+  - platform: monochromatic
+    name: "Taśma nad blatem"
+    id: tasma_1
+    output: mono_output_1
+  - platform: monochromatic
+    name: "Taśma pod parapetem i wyspa"
+    id: tasma_2
+    output: mono_output_2
+    on_turn_on:
+      - delay: 1h
+      - light.turn_off: tasma_2

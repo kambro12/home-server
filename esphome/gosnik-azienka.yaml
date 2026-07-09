@@ -1,0 +1,52 @@
+esphome:
+  name: glosnik-lazienka
+  friendly_name: Głośnik Łazienka
+  comment: Głośnik MusicAssistant w łazience 
+  
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  use_address: 192.168.1.36
+api:
+  encryption:
+    key: "MFqzNgcQFA7W1A1GbOUibmmI9nA1Sa2+wj2uOvC699Y="
+
+ota:
+  - platform: esphome
+    password: "e8440394be9362872e5f98a332499f11"
+logger:
+  level: ERROR
+
+#D25 - DIN
+#D26 - LRCK
+#D27 - BCK
+#VIN - 5V
+
+i2s_audio:
+  i2s_lrclk_pin: GPIO26
+  i2s_bclk_pin: GPIO27
+
+media_player:
+  - platform: i2s_audio
+    dac_type: external
+    i2s_dout_pin: GPIO25
+    mode: stereo
+    id: mp
+    name: "Głośnik Łazienka"
+
+sensor:
+  - platform: dht
+    pin: GPIO15
+    temperature:
+      name: "Temperatura Łazienka"
+      filters:
+        - offset: -2.5
+    humidity:
+      name: "Wilgotność Łazienka"
+    update_interval: 60s
+    model: DHT11

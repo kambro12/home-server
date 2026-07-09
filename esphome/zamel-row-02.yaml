@@ -1,0 +1,58 @@
+esphome:
+  name: zamel-row-02
+  friendly_name: ZAMEL ROW-02
+
+esp8266:
+  board: esp01_1m
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "+ylOOFW5SNq6gneT2aorYCF84ArivQsp2bMIRTUKwG8="
+
+ota:
+  - platform: esphome
+    password: "536ed081ec815cb731f5a3cbd383271f"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "Zamel-Row-02 Fallback Hotspot"
+    password: "ANIFZXztevGZ"
+
+captive_portal:
+
+
+switch:
+  # Przekaźniki
+  #- platform: gpio
+   # inverted: True
+   # name: "Relay 1"
+    #pin: GPIO04
+    #id: Relay_1
+  - platform: gpio
+   # inverted: true
+    name: "Relay 2"
+    pin: GPIO05
+    id: relay_2
+ # - platform: gpio
+  #  inverted: true
+  #  name: "Stan 2"
+  #  pin: GPIO16
+  #  id: stan_2
+  - platform: gpio
+   # inverted: true
+    name: "Relay 3"
+    pin: GPIO12
+    id: relay_3
+  #- platform: gpio
+   # inverted: true
+   # name: "Stan 1"
+   # pin: GPIO14
+   # id: stan_1
