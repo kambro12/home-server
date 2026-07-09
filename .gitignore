@@ -1,9 +1,9 @@
 # ESPHome wykluczenia
 esphome/.esphome/
 esphome/secrets.yaml
-
+.env
 # Blokada pliku docker-compose
-docker-compose.yml
+
 
 # Wykluczenie wszystkiego z wyjątkiem wybranych folderów
 /*
