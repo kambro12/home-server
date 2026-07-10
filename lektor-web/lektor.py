@@ -19,6 +19,12 @@ out_dir = target_dir
 if save_mode == "1":
     out_dir = os.path.join(target_dir, "Lektor_PL")
     os.makedirs(out_dir, exist_ok=True)
+    # POPRAWKA UPRAWNIEŃ: Wymuszamy pełne prawa 777 dla nowego katalogu
+    try:
+        st_dir = os.stat(target_dir)
+        os.chown(out_dir, st_dir.st_uid, st_dir.st_gid)
+        os.chmod(out_dir, 0o777)
+    except: pass
 
 def clean_text(text):
     text = re.sub(r'<[^>]*>', '', text)
@@ -142,7 +148,6 @@ def process_media(video_file, srt_file):
         "ffmpeg", "-y",
         "-i", video_file,
         "-i", temp_wav,
-        # ZMIANA: Tło na 1.0 (100%), lektor na 1.2 (120%)
         "-filter_complex", "[0:a:0]volume=1.0[orig];[1:a]volume=1.2[lektor];[orig][lektor]amix=inputs=2:duration=first:dropout_transition=0[zmiksowane]",
         "-map", "[zmiksowane]",
         "-c:a", "ac3",      
@@ -170,7 +175,8 @@ def process_media(video_file, srt_file):
         subprocess.run(komenda_mkvmerge, check=True, stdout=subprocess.DEVNULL)
         st = os.stat(video_file)
         os.chown(output_mkv, st.st_uid, st.st_gid)
-        os.chmod(output_mkv, 0o664)
+        # POPRAWKA UPRAWNIEŃ: Wymuszamy pełne prawa 777 dla pliku mkv
+        os.chmod(output_mkv, 0o777)
         print(f"Sukces! Gotowy plik leży w: {out_dir}")
     except Exception as e:
         print(f"Błąd mkvmerge: {e}")
