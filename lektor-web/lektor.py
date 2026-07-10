@@ -11,13 +11,20 @@ if len(sys.argv) < 3:
 
 video_file = sys.argv[1]
 srt_file = sys.argv[2]
+save_mode = sys.argv[3] if len(sys.argv) > 3 else "0"
+
 target_dir = os.path.dirname(video_file)
+out_dir = target_dir
+
+if save_mode == "1":
+    out_dir = os.path.join(target_dir, "Lektor_PL")
+    os.makedirs(out_dir, exist_ok=True)
 
 def clean_text(text):
     text = re.sub(r'<[^>]*>', '', text)
     text = re.sub(r'[^\w\s.,?!;:ąęłńóśźżĄĘŁŃÓŚŹŻ-]', '', text)
     text = re.sub(r'\.{2,}', '.', text)
-    return text.replace('\n', ' ').strip()
+    return text.replace('?', '.').replace('\n', ' ').strip()
 
 def srt_time_to_seconds(time_str):
     match = re.match(r"(\d+):(\d+):(\d+),(\d+)", time_str)
@@ -36,9 +43,11 @@ def read_exact(sock_file, size):
 
 def process_media(video_file, srt_file):
     base_name = os.path.splitext(os.path.basename(video_file))[0]
-    temp_pcm = os.path.join(target_dir, f"temp_{base_name}.pcm")
-    temp_wav = os.path.join(target_dir, f"temp_{base_name}.wav")
-    output_mkv = os.path.join(target_dir, f"{base_name}_PL.mkv")
+    
+    temp_pcm = os.path.join(out_dir, f"temp_{base_name}.pcm")
+    temp_wav = os.path.join(out_dir, f"temp_{base_name}.wav")
+    temp_mixed = os.path.join(out_dir, f"temp_{base_name}_mixed.ac3")
+    output_mkv = os.path.join(out_dir, f"{base_name}_PL.mkv")
 
     print(f"\n--- Analiza: {base_name} ---")
 
@@ -120,55 +129,55 @@ def process_media(video_file, srt_file):
                     print(f"Ostrzeżenie: Błąd w sekwencji {idx+1}: {e}")
 
                 if (idx + 1) % 50 == 0 or (idx + 1) == len(grouped_blocks):
-                    print(f"[{base_name}] Postęp: {idx + 1}/{len(grouped_blocks)}")
+                    print(f"Postęp: {idx + 1}/{len(grouped_blocks)}")
 
     except Exception as e:
         print(f"Błąd krytyczny: {e}")
         return
 
-    print("Przygotowanie surowej ścieżki lektora...")
+    print("Miksowanie ścieżek z oryginalnym tłem (Tło: 100%, Lektor: 120%)...")
     subprocess.run(["ffmpeg", "-y", "-f", "s16le", "-ar", "22050", "-ac", "1", "-i", temp_pcm, temp_wav], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-    if os.path.exists(output_mkv): os.remove(output_mkv)
-
-    print("Miksowanie ścieżek z wideo (Lektor AI + Tło oryginału)...")
     komenda_ffmpeg = [
         "ffmpeg", "-y",
         "-i", video_file,
         "-i", temp_wav,
-        
-        # Filtr - Wyciszamy tło do 20%, wzmacniamy lektora do 150% (amix na 2 wejściach)
-        "-filter_complex", "[0:a:0]volume=0.2[orig];[1:a]volume=1.5[lektor];[orig][lektor]amix=inputs=2:duration=first:dropout_transition=0[zmiksowane]",
-        
-        "-map", "0:v",               # Kopiujemy oryginalny obraz
-        "-map", "[zmiksowane]",      # 1-sza ścieżka Audio: Nasz Lektor AI
-        "-map", "0:a",               # 2-ga i pozostałe ścieżki: Wszystkie oryginalne (nietknięte) dźwięki
-        "-map", "0:s?",              # Kopiujemy oryginalne napisy
-        
-        "-c:v", "copy",              # Obraz bez strat
-        "-c:a", "copy",              # Domyślnie dla audio - kopia (by zostawić oryginalne 5.1 nietknięte)
-        "-c:a:0", "aac",             # Tylko nasz lektor [zmiksowane] jest encodowany do standardowego aac
-        "-b:a:0", "320k",
-        "-c:s", "copy",              # Napisy bez strat
-        
-        "-metadata:s:a:0", "language=pol",
-        "-metadata:s:a:0", "title=Polski Lektor AI",
-        "-metadata:s:a:1", "language=eng",
-        "-metadata:s:a:1", "title=Oryginalna Ścieżka",
-        
-        output_mkv
+        # ZMIANA: Tło na 1.0 (100%), lektor na 1.2 (120%)
+        "-filter_complex", "[0:a:0]volume=1.0[orig];[1:a]volume=1.2[lektor];[orig][lektor]amix=inputs=2:duration=first:dropout_transition=0[zmiksowane]",
+        "-map", "[zmiksowane]",
+        "-c:a", "ac3",      
+        "-b:a", "384k",     
+        temp_mixed
     ]
-
     try:
         subprocess.run(komenda_ffmpeg, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"Błąd FFmpeg: {e}")
+        return
+
+    if os.path.exists(output_mkv): os.remove(output_mkv)
+
+    print("Ostateczne pakowanie mkvmerge...")
+    komenda_mkvmerge = [
+        "mkvmerge", "-o", output_mkv,
+        video_file,                 
+        "--language", "0:pl",
+        "--track-name", "0:Polski Lektor AI",
+        "--default-track", "0:yes",
+        temp_mixed                  
+    ]
+    try:
+        subprocess.run(komenda_mkvmerge, check=True, stdout=subprocess.DEVNULL)
         st = os.stat(video_file)
         os.chown(output_mkv, st.st_uid, st.st_gid)
         os.chmod(output_mkv, 0o664)
-        print(f"Sukces! Wygenerowano: {os.path.basename(output_mkv)}")
+        print(f"Sukces! Gotowy plik leży w: {out_dir}")
     except Exception as e:
-        print(f"Błąd FFmpeg podczas miksowania: {e}")
+        print(f"Błąd mkvmerge: {e}")
 
-    if os.path.exists(temp_pcm): os.remove(temp_pcm)
-    if os.path.exists(temp_wav): os.remove(temp_wav)
+    for tmp in [temp_pcm, temp_wav, temp_mixed]:
+        if os.path.exists(tmp):
+            try: os.remove(tmp)
+            except: pass
 
 process_media(video_file, srt_file)

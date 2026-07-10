@@ -2,65 +2,108 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lektor AI</title>
     <style>
-        body { background-color: #1a1b1e; color: #c1c2c5; font-family: sans-serif; display: flex; justify-content: center; margin-top: 50px; }
-        .container { background-color: #25262b; padding: 20px; border-radius: 8px; width: 650px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        h2 { color: white; margin-top: 0; font-size: 16px;}
-        input[type="text"] { width: 100%; padding: 10px; margin-bottom: 10px; background: #141517; border: 1px solid #373a40; color: white; border-radius: 4px; box-sizing: border-box; }
+        /* Styl bazowy - dostosowany pod telefony (Mobile First) */
+        body { background-color: #1a1b1e; color: #c1c2c5; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 15px; box-sizing: border-box;}
+        .container { background-color: #25262b; padding: 15px; border-radius: 8px; width: 100%; max-width: 750px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h2 { color: white; margin-top: 0; font-size: 16px; margin-bottom: 10px;}
         
-        .dir-list { border: 1px solid #373a40; border-radius: 4px; max-height: 400px; overflow-y: auto; background: #1a1b1e; margin-bottom: 15px; }
-        .dir-item { padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #2c2e33; display: flex; align-items: center; font-weight: bold;}
+        .nav-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .nav-btn { background-color: #373a40; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; width: 100%; box-sizing: border-box;}
+        .nav-btn:hover { background-color: #4d5159; }
+        .nav-btn.up { background-color: #1c7ed6; }
+        .nav-btn.up:hover { background-color: #1971c2; }
+        
+        input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; background: #141517; border: 1px solid #373a40; color: white; border-radius: 4px; box-sizing: border-box; font-size: 14px;}
+        
+        .controls { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;}
+        .controls a { color: #4dabf7; cursor: pointer; text-decoration: none; padding: 5px 0;}
+        .controls a:hover { text-decoration: underline;}
+
+        .dir-list { border: 1px solid #373a40; border-radius: 4px; height: 350px; overflow-y: auto; background: #1a1b1e; margin-bottom: 15px; }
+        .dir-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #2c2e33; display: flex; align-items: center; font-weight: bold; font-size: 14px;}
         .dir-item:hover { background-color: #2c2e33; }
-        .dir-item.back { color: #4dabf7; }
         
-        .file-item { display: flex; align-items: center; padding: 6px 12px; border-bottom: 1px solid #2c2e33;}
+        .file-item { display: flex; align-items: center; padding: 10px 12px; border-bottom: 1px solid #2c2e33;}
         .file-item:hover { background-color: #25262b; }
-        .file-item label { cursor: pointer; margin-left: 10px; word-break: break-all; width: 100%;}
-        .file-item input[type="checkbox"] { transform: scale(1.2); cursor: pointer; margin: 0; }
+        .file-item label { cursor: pointer; margin-left: 12px; word-break: break-all; width: 100%; font-size: 14px; line-height: 1.4;}
+        .file-item input[type="checkbox"] { transform: scale(1.5); cursor: pointer; margin: 0; flex-shrink: 0;}
         
         .file-type-mkv { color: #fcc419; }
         .file-type-srt { color: #20c997; }
 
-        .btn-group { display: flex; gap: 10px; margin-bottom: 15px;}
-        .btn { border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1;}
+        .options-bar { background-color: #141517; padding: 12px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #373a40;}
+        .options-bar label { cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: bold; color: #4dabf7; font-size: 14px;}
+        .options-bar input[type="checkbox"] { transform: scale(1.5); flex-shrink: 0;}
+        
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
+        .btn { border: none; padding: 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; box-sizing: border-box;}
         .btn-start { background-color: #2f9e44; color: white; }
         .btn-start:hover { background-color: #2b8a3e; }
-        .btn-start:disabled { background-color: #2c2e33; cursor: not-allowed; color: #868e96;}
-        
-        .btn-delete { background-color: #e03131; color: white; }
-        .btn-delete:hover { background-color: #c92a2a; }
+        .btn-stop { background-color: #e03131; color: white; display: none;}
+        .btn-stop:hover { background-color: #c92a2a; }
+        .btn-delete { background-color: #495057; color: white; }
+        .btn-delete:hover { background-color: #343a40; }
 
-        .status-box { background: #141517; border: 1px solid #373a40; padding: 10px; border-radius: 4px; font-family: monospace; height: 20px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .status-container { background: #000; border: 1px solid #373a40; border-radius: 4px; padding: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);}
+        .current-file { font-weight: bold; color: #4dabf7; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #373a40; word-break: break-all; font-size: 14px;}
+        .console-box { font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto; color: #20c997; white-space: pre-wrap; display: flex; flex-direction: column;}
         
-        .controls { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px;}
-        .controls a { color: #4dabf7; cursor: pointer; text-decoration: none;}
-        .controls a:hover { text-decoration: underline;}
+        /* Styl dla Komputerów (ekrany szersze niż 600px) */
+        @media (min-width: 600px) {
+            body { padding: 30px; }
+            .container { padding: 20px; }
+            .nav-bar { flex-direction: row; }
+            .nav-btn { width: auto; }
+            .nav-btn.up { margin-left: auto; }
+            .btn-group { flex-direction: row; }
+            .btn { width: auto; flex: 1; }
+            .btn-delete { flex: 0.5; }
+            .dir-list { height: 260px; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h2>Wybierz pliki do wygenerowania lektora (Wymagany plik VIDEO i SRT):</h2>
+        <div class="nav-bar">
+            <button class="nav-btn" onclick="loadDir('/mnt/media/filmy')">🏠 Filmy</button>
+            <button class="nav-btn" onclick="loadDir('/mnt/media/seriale')">📺 Seriale</button>
+            <button class="nav-btn up" onclick="goUp()">⬆️ W górę (Katalog wyżej)</button>
+        </div>
+        
         <input type="text" id="path-input" readonly>
 
         <div class="controls">
-            <a onclick="selectAll(true)">Zaznacz wszystkie</a>
+            <a onclick="selectAll(true)">Zaznacz wszystkie pliki</a>
             <a onclick="selectAll(false)">Odznacz wszystkie</a>
         </div>
 
-        <div class="dir-list" id="dir-list">
+        <div class="dir-list" id="dir-list"></div>
+
+        <div class="options-bar">
+            <label>
+                <input type="checkbox" id="chk-save-mode">
+                📁 Zapisz gotowe pliki w podkatalogu "Lektor_PL"
+            </label>
         </div>
 
         <div class="btn-group">
-            <button class="btn btn-delete" onclick="deleteSelected()">🗑️ Usuń zaznaczone pliki</button>
-            <button class="btn btn-start" id="btn-start" onclick="startProcessing()">🚀 Generuj Lektora</button>
+            <button class="btn btn-delete" id="btn-delete" onclick="deleteSelected()">🗑️ Usuń z dysku</button>
+            <button class="btn btn-start" id="btn-start" onclick="startProcessing()">🚀 Rozpocznij Generowanie</button>
+            <button class="btn btn-stop" id="btn-stop" onclick="stopProcessing()">🛑 PRZERWIJ PRZETWARZANIE</button>
         </div>
         
-        <div class="status-box" id="status-box">IDLE</div>
+        <div class="status-container">
+            <div class="current-file">Trwa przerabianie: <span id="current-file-name" style="color: white;">Brak (IDLE)</span></div>
+            <div class="console-box" id="console-box"></div>
+        </div>
     </div>
 
     <script>
         let currentPath = "";
+        let parentPath = "";
         let allFilesData = [];
 
         function loadDir(path) {
@@ -68,14 +111,11 @@
                 .then(r => r.json())
                 .then(data => {
                     currentPath = data.current;
+                    parentPath = data.parent;
                     document.getElementById('path-input').value = currentPath;
                     allFilesData = data.files;
 
                     let html = '';
-                    if (data.current !== "/" && data.current !== "/mnt") {
-                        html += `<div class="dir-item back" onclick="loadDir('${data.parent.replace(/\\/g, '\\\\')}')">⬆️ [Wstecz do folderu nadrzędnego]</div>`;
-                    }
-
                     data.dirs.forEach(d => {
                         html += `<div class="dir-item" onclick="loadDir('${d.path.replace(/\\/g, '\\\\')}')">📁 ${d.name}</div>`;
                     });
@@ -93,17 +133,18 @@
                 });
         }
 
+        function goUp() {
+            if(parentPath) loadDir(parentPath);
+        }
+
         function selectAll(state) {
             document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = state);
         }
 
         function deleteSelected() {
             let selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
-            if (selectedFiles.length === 0) {
-                alert("Zaznacz z listy pliki, które chcesz usunąć!");
-                return;
-            }
-            if (confirm(`Uwaga! Czy na pewno chcesz całkowicie usunąć z dysku ${selectedFiles.length} plików?`)) {
+            if (selectedFiles.length === 0) return alert("Zaznacz z listy pliki do usunięcia!");
+            if (confirm(`Uwaga! Czy na pewno chcesz trwale usunąć ${selectedFiles.length} plików z dysku?`)) {
                 fetch('/api/delete', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -121,49 +162,62 @@
                 }
             });
 
-            if (selectedVideos.length === 0) {
-                alert("Najpierw zaznacz plik WIDEO, dla którego chcesz wygenerować polskiego lektora.");
-                return;
-            }
+            if (selectedVideos.length === 0) return alert("Najpierw zaznacz plik WIDEO!");
 
             let pairs = [];
             for (let vid of selectedVideos) {
                 let base = vid.substring(0, vid.lastIndexOf('.'));
-                // Szuka pasujących napisów
                 let srtMatch = allFilesData.find(f => (f.path === base + '.srt' || f.path === base + '.pl.srt'));
-                
                 if (srtMatch) {
                     pairs.push({video: vid, srt: srtMatch.path});
                 } else {
-                    alert(`Brak napisów (.srt) dla pliku wideo:\n${vid.split('/').pop()}\n\nZadbaj by plik wideo i napisy miały identyczną nazwę!`);
-                    return; 
+                    return alert(`Brak napisów dla pliku:\n${vid.split('/').pop()}`);
                 }
             }
+
+            let saveMode = document.getElementById('chk-save-mode').checked;
 
             fetch('/api/start', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({pairs: pairs})
+                body: JSON.stringify({pairs: pairs, save_mode: saveMode})
             });
+        }
+
+        function stopProcessing() {
+            if(confirm("Jesteś pewien, że chcesz przerwać generowanie lektora w połowie? Proces zostanie zabity.")) {
+                fetch('/api/stop', { method: 'POST' });
+            }
         }
 
         function updateStatus() {
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('status-box').innerText = data.output;
-                    document.getElementById('btn-start').disabled = data.is_processing;
+                    document.getElementById('current-file-name').innerText = data.current_file;
                     
+                    let consoleBox = document.getElementById('console-box');
+                    let isScrolledToBottom = consoleBox.scrollHeight - consoleBox.clientHeight <= consoleBox.scrollTop + 1;
+                    
+                    consoleBox.innerText = data.output.join('\n');
+                    if (isScrolledToBottom) {
+                        consoleBox.scrollTop = consoleBox.scrollHeight;
+                    }
+
                     if(data.is_processing) {
-                        document.getElementById('btn-start').innerText = "⏳ Przetwarzanie lektora AI...";
+                        document.getElementById('btn-start').style.display = 'none';
+                        document.getElementById('btn-delete').style.display = 'none';
+                        document.getElementById('btn-stop').style.display = 'block';
                     } else {
-                        document.getElementById('btn-start').innerText = "🚀 Generuj Lektora";
+                        document.getElementById('btn-start').style.display = 'block';
+                        document.getElementById('btn-delete').style.display = 'block';
+                        document.getElementById('btn-stop').style.display = 'none';
                     }
                 }).catch(() => {});
         }
 
         loadDir('/mnt/media/filmy');
-        setInterval(updateStatus, 1500);
+        setInterval(updateStatus, 1000);
     </script>
 </body>
 </html>
