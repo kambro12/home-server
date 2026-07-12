@@ -66,6 +66,9 @@ services:
       - serwer-network
     devices:
       - /dev/dri:/dev/dri
+    group_add:
+      - "44"
+      - "991"
 
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
@@ -320,3 +323,78 @@ services:
       - serwer-network
     depends_on:
       - piper
+  jellystat:
+    image: cyfershepard/jellystat:latest
+    container_name: jellystat
+    ports:
+      - "3000:3000"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=jellystat_haslo
+      - POSTGRES_IP=jellystat-db
+      - POSTGRES_PORT=5432
+      - JWT_SECRET=super_tajny_klucz_do_logowania
+    depends_on:
+      - jellystat-db
+    networks:
+      - serwer-network
+    restart: unless-stopped
+
+  jellystat-db:
+    image: postgres:15
+    container_name: jellystat-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=jellystat_haslo
+      - POSTGRES_DB=jellystat
+    volumes:
+      - /mnt/media/jellystat_data:/var/lib/postgresql/data
+    networks:
+      - serwer-network
+    restart: unless-stopped
+  tdarr:
+    container_name: tdarr
+    image: ghcr.io/haveagitgat/tdarr:latest
+    restart: unless-stopped
+    ports:
+      - 8265:8265
+      - 8266:8266
+    environment:
+      - TZ=Europe/Warsaw
+      - PUID=1000
+      - PGID=1000
+      - UMASK_SET=022
+      - serverIP=0.0.0.0
+      - serverPort=8266
+      - webUIPort=8265
+    volumes:
+      - ./config_tdarr/server:/app/server
+      - ./config_tdarr/configs:/app/configs
+      - ./config_tdarr/logs:/app/logs
+      - /mnt/media:/media
+    networks:
+      - serwer-network
+
+  tdarr_node:
+    container_name: tdarr_node
+    image: ghcr.io/haveagitgat/tdarr_node:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Warsaw
+      - PUID=1000
+      - PGID=1000
+      - UMASK_SET=022
+      - nodeID=SerwerDell
+      - serverIP=tdarr
+      - serverPort=8266
+    volumes:
+      - ./config_tdarr/configs:/app/configs
+      - ./config_tdarr/logs:/app/logs
+      - /mnt/media:/media
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - "44"
+      - "991"
+    networks:
+      - serwer-network

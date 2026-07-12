@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dell 5040 | Home Server</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0b1120;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.5);
+            --glass-bg: rgba(30, 41, 59, 0.5);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-hover: rgba(255, 255, 255, 0.2);
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif; 
+            min-height: 100vh; 
+            padding: 40px 20px 60px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .bg-mesh {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.12), transparent 50%);
+            animation: meshAnim 15s ease-in-out infinite alternate;
+        }
+        @keyframes meshAnim {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1) translate(-20px, 20px); }
+        }
+
+        header { text-align: center; margin-bottom: 40px; width: 100%; max-width: 650px; }
+        header h1 { 
+            font-size: 2.5rem; 
+            font-weight: 700; 
+            letter-spacing: -0.02em; 
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header p { color: var(--text-muted); font-size: 0.95rem; font-weight: 300; letter-spacing: 2px; text-transform: uppercase; }
+        
+        .section-title { 
+            width: 100%; 
+            max-width: 650px; 
+            font-size: 0.85rem; 
+            font-weight: 500; 
+            color: var(--text-muted); 
+            text-transform: uppercase; 
+            letter-spacing: 0.15em; 
+            margin: 35px 0 15px; 
+            display: flex;
+            align-items: center;
+        }
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, var(--glass-border) 0%, transparent 100%);
+            margin-left: 15px;
+        }
+
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 16px; 
+            width: 100%; 
+            max-width: 650px; 
+        }
+        @media (min-width: 500px) { .grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
+
+        .card { 
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border); 
+            border-radius: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 25px 10px; 
+            text-decoration: none; 
+            color: var(--text-main); 
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+            aspect-ratio: 1 / 1; 
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .card > * { position: relative; z-index: 1; }
+
+        @media (hover: hover) { 
+            .card:hover { 
+                transform: translateY(-5px); 
+                border-color: var(--glass-border-hover); 
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+                background: rgba(40, 53, 72, 0.6);
+            } 
+        }
+        .card:active { transform: scale(0.96); }
+
+        .card i { 
+            font-size: 2.2rem; 
+            margin-bottom: 15px; 
+            color: var(--accent); 
+            transition: all 0.3s ease; 
+            filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3));
+        }
+        .card:hover i { 
+            transform: scale(1.15) translateY(-2px);
+            color: #60a5fa; 
+            filter: drop-shadow(0 0 15px var(--accent-glow));
+        }
+        
+        .card span:not(.subtitle) { font-size: 1rem; font-weight: 500; text-align: center; word-break: break-word; letter-spacing: 0.02em; }
+        .card .subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; font-weight: 300; opacity: 0.8; }
+
+        .card.router i { color: #10b981; filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.3)); }
+        .card.router:hover i { color: #34d399; filter: drop-shadow(0 0 15px rgba(16, 185, 129, 0.5)); }
+        
+        .card.personal i { color: #f59e0b; filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.3)); }
+        .card.personal:hover i { color: #fbbf24; filter: drop-shadow(0 0 15px rgba(245, 158, 11, 0.5)); }
+
+        .torrent-panel {
+            width: 100%;
+            max-width: 650px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 5px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .torrent-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 15px;
+        }
+        .torrent-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 12px;
+            transition: all 0.2s;
+            border-radius: 8px;
+            font-family: inherit;
+        }
+        .torrent-tab:hover { color: var(--text-main); background: rgba(255,255,255,0.1); }
+        .torrent-tab.active { color: #fff; background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);}
+        .torrent-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 350px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .torrent-list::-webkit-scrollbar { width: 6px; }
+        .torrent-list::-webkit-scrollbar-track { background: transparent; }
+        .torrent-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+        .torrent-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        .torrent-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--glass-border-hover);
+            transform: translateX(5px);
+        }
+        .torrent-icon {
+            font-size: 1.3rem;
+            min-width: 30px;
+            text-align: center;
+        }
+        .torrent-details {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            overflow: hidden;
+            width: 100%;
+        }
+        .torrent-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #fff;
+        }
+        .torrent-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+        }
+        .torrent-type {
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-right: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .type-series {
+            background: rgba(96, 165, 250, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+        }
+        .type-movie {
+            background: rgba(52, 211, 153, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+        .torrent-loader {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }    </style>
+</head>
+<body>
+    <div class="bg-mesh"></div>
+    <header>
+        <h1>DELL 5040</h1>
+        <p>Home Server Dashboard</p>
+    </header>
+
+    <div class="section-title">Serwer</div>
+    <div class="grid">
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8123" class="card">
+            <i class="fa-solid fa-house-laptop"></i>
+            <span>Home Assistant</span>
+            <span class="subtitle">Automatyka</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8096" class="card">
+            <i class="fa-solid fa-film"></i>
+            <span>Jellyfin</span>
+            <span class="subtitle">Media Serwer</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8282" class="card">
+            <i class="fa-solid fa-download"></i>
+            <span>qBittorrent</span>
+            <span class="subtitle">Pobieranie</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:5055" class="card">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+            <span>Jellyseerr</span>
+            <span class="subtitle">Żądania</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8989" class="card">
+            <i class="fa-solid fa-tv"></i>
+            <span>Sonarr</span>
+            <span class="subtitle">Seriale</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:7878" class="card">
+            <i class="fa-solid fa-clapperboard"></i>
+            <span>Radarr</span>
+            <span class="subtitle">Filmy</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:9696" class="card">
+            <i class="fa-solid fa-search"></i>
+            <span>Prowlarr</span>
+            <span class="subtitle">Indeksery</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:6767" class="card">
+            <i class="fa-solid fa-closed-captioning"></i>
+            <span>Bazarr</span>
+            <span class="subtitle">Napisy</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8095" class="card">
+            <i class="fa-solid fa-music"></i>
+            <span>Music Assistant</span>
+            <span class="subtitle">Muzyka</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:6052" class="card">
+            <i class="fa-solid fa-microchip"></i>
+            <span>ESPHome</span>
+            <span class="subtitle">IoT Flashing</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:1984" class="card">
+            <i class="fa-solid fa-video"></i>
+            <span>go2rtc</span>
+            <span class="subtitle">Kamery RTSP</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8081" class="card">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>File Browser</span>
+            <span class="subtitle">Pliki</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8085" class="card">
+            <i class="fa-brands fa-youtube"></i>
+            <span>MeTube</span>
+            <span class="subtitle">Pobieranie muzyki</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:5000" class="card">
+            <i class="fa-solid fa-microphone-lines"></i>
+            <span>Lektor AI</span>
+            <span class="subtitle">Miksowanie audio</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:3000" class="card">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Jellystat</span>
+            <span class="subtitle">Statystyki</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8265" class="card">
+            <i class="fa-solid fa-server"></i>
+            <span>Tdarr</span>
+            <span class="subtitle">Optymalizacja Wideo</span>
+        </a>
+    </div>
+
+    <div class="section-title">Osobiste</div>
+    <div class="grid">
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:5230" class="card personal">
+            <i class="fa-solid fa-note-sticky"></i>
+            <span>Memos</span>
+            <span class="subtitle">Notatki</span>
+        </a>
+    </div>
+
+    <div class="section-title">Sieć</div>
+    <div class="grid">
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.1" class="card router">
+            <i class="fa-solid fa-network-wired"></i>
+            <span>Router Główny</span>
+            <span class="subtitle">192.168.1.1</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.150" class="card router">
+            <i class="fa-solid fa-wifi"></i>
+            <span>Router Salon</span>
+            <span class="subtitle">192.168.1.150</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.151" class="card router">
+            <i class="fa-solid fa-wifi"></i>
+            <span>Router Garaż</span>
+            <span class="subtitle">192.168.1.151</span>
+        </a>
+    </div>
+    <div class="section-title">Najnowsze Torrenty</div>
+    <div class="torrent-panel">
+        <div class="torrent-tabs">
+            <button class="torrent-tab active" onclick="loadTorrents(event, 'electro')">Electro-Torrent</button>
+            <button class="torrent-tab" onclick="loadTorrents(event, 'devil')">Devil-Torrents</button>
+            <button class="torrent-tab" onclick="loadTorrents(event, 'pt')">Polskie-Torrenty</button>
+        </div>
+        <div class="torrent-list" id="torrent-list">
+            <div class="torrent-loader"><i class="fa-solid fa-spinner fa-spin"></i> Ładowanie...</div>
+        </div>
+    </div>
+
+    <script>
+        const proxyBase = "http://192.168.1.32:2345/rss/";
+        
+        const sources = {
+            'electro': [
+                'electro/rss.php?cat=769',
+                'electro/rss.php?cat=770',
+                'electro/rss.php?cat=4',
+                'electro/rss.php?cat=7'
+            ],
+            'devil': [
+                'devil/rss/kategoria/Filmy%20x264%2Fh264',
+                'devil/rss/kategoria/Filmy%20x265%2Fh265',
+                'devil/rss/kategoria/TV%2FSeriale'
+            ],
+            'pt': [
+                'pt/rss.php?limit=100'
+            ]
+        };
+
+        async function fetchRSS(url) {
+            try {
+                const response = await fetch(proxyBase + url);
+                if (!response.ok) {
+                    return { error: "HTTP " + response.status };
+                }
+                const text = await response.text();
+                const parser = new DOMParser();
+                // Używamy text/html zamiast text/xml, ponieważ Polskie-Torrenty wysyłają
+                // encje HTML (np. &oacute;), które wysypują rygorystyczny parser XML.
+                // Zamieniamy tagi <link> na <rsslink>, ponieważ w HTML <link> to pusty element (void)
+                // i parser usunąłby zawartość linku!
+                const safeText = text.replace(/<link[^>]*>/gi, "<rsslink>").replace(/<\/link>/gi, "</rsslink>");
+                const doc = parser.parseFromString(safeText, "text/html");
+                return doc;
+            } catch (e) {
+                return { error: e.message };
+            }
+        }
+
+        function parseItems(doc, sourceId) {
+            if (!doc || doc.error || !doc.querySelectorAll) return [];
+            const items = doc.querySelectorAll("item");
+            const result = [];
+            items.forEach(item => {
+                const title = item.querySelector("title")?.textContent || "Brak tytułu";
+                let link = item.querySelector("rsslink")?.textContent || "#";
+                
+                // Czasami link jest względny (bez http), dodajemy domenę dla pewności:
+                if (link !== "#" && !link.startsWith("http")) {
+                    if (sourceId === 'electro') link = "https://electro-torrent.pl/" + link.replace(/^\//, '');
+                    else if (sourceId === 'devil') link = "https://devil-torrents.pl/" + link.replace(/^\//, '');
+                    else if (sourceId === 'pt') link = "https://polskie-torrenty.eu/" + link.replace(/^\//, '');
+                }
+
+                let pubDate = item.querySelector("pubDate")?.textContent || item.querySelector("pubdate")?.textContent || "";
+                
+                if (sourceId === 'pt') {
+                    const tLower = title.toLowerCase();
+                    const isVideo = tLower.includes('1080p') || tLower.includes('720p') || tLower.includes('2160p') || tLower.includes('4k') ||
+                                    tLower.includes('x264') || tLower.includes('x265') || tLower.includes('h264') || tLower.includes('h265') ||
+                                    tLower.includes('bluray') || tLower.includes('web-dl') || tLower.includes('brrip') || tLower.includes('dvdrip') ||
+                                    tLower.includes('lektor') || tLower.includes('dubbing') || tLower.includes('napisy') ||
+                                    tLower.match(/s\d{2}e\d{2}/) || tLower.includes('sezon');
+                    if (!isVideo) return;
+                }
+
+                try {
+                    if (pubDate && pubDate.trim() !== "") {
+                        const d = new Date(pubDate);
+                        if (!isNaN(d)) {
+                            pubDate = d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
+                        } else {
+                            pubDate = "";
+                        }
+                    } else {
+                        pubDate = "";
+                    }
+                } catch(e) {
+                    pubDate = "";
+                }
+
+                result.push({ title, link, pubDate });
+            });
+            return result;
+        }
+        async function loadTorrents(event, sourceId) {
+            if(event) {
+                document.querySelectorAll('.torrent-tab').forEach(btn => btn.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+            }
+
+            const listEl = document.getElementById('torrent-list');
+            listEl.innerHTML = '<div class="torrent-loader"><i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5em; margin-bottom: 10px; display:block;"></i> Pobieranie nowości...</div>';
+
+            let allItems = [];
+            let lastError = null;
+            
+            if (sourceId === 'pt') {
+                try {
+                    const response = await fetch(proxyBase + 'pt/');
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    const text = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(text, "text/html");
+                    
+                    const items = doc.querySelectorAll('.sliderImages a.lamirek');
+                    items.forEach(item => {
+                        const title = item.getAttribute('title') || 'Brak tytułu';
+                        let href = item.getAttribute('href') || '#';
+                        if (href.startsWith('/')) href = 'https://polskie-torrenty.eu' + href;
+                        
+                        allItems.push({
+                            title: title,
+                            link: href,
+                            pubDate: ''
+                        });
+                    });
+                } catch (e) {
+                    lastError = e.message;
+                }
+            } else {
+                const urls = sources[sourceId];
+                for (const url of urls) {
+                    const xml = await fetchRSS(url);
+                    if (xml && xml.error) {
+                        lastError = xml.error;
+                    } else {
+                        const items = parseItems(xml, sourceId);
+                        allItems = allItems.concat(items);
+                    }
+                }
+            }
+
+            allItems = allItems.slice(0, 30);
+
+            if (allItems.length === 0) {
+                listEl.innerHTML = `<div class="torrent-loader">Brak wyników. ${lastError ? 'Błąd: ' + lastError : ''}</div>`;
+                return;
+            }
+
+            let html = '';
+            allItems.forEach(item => {
+                let isSeries = item.title.toLowerCase().match(/s\d{2}e\d{2}/) || item.title.toLowerCase().includes('sezon');
+                let icon = isSeries ? '<i class="fa-solid fa-tv" style="color: #60a5fa;"></i>' : '<i class="fa-solid fa-film" style="color: #34d399;"></i>';
+                let typeBadge = isSeries ? '<span class="torrent-type type-series">Serial</span>' : '<span class="torrent-type type-movie">Film</span>';
+
+                html += `
+                    <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="torrent-item">
+                        <div class="torrent-icon">${icon}</div>
+                        <div class="torrent-details">
+                            <div class="torrent-title">${item.title}</div>
+                            <div class="torrent-meta">${typeBadge} <span>${item.pubDate}</span></div>
+                        </div>
+                    </a>
+                `;
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTorrents(null, 'electro');
+        });
+    </script>
+</body>
+</html>

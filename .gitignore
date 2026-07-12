@@ -9,4 +9,5 @@ esphome/secrets.yaml
 /*
 !/lektor-web/
 !/esphome/
+!/dashboard/
 !/.gitignore

@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lektor AI</title>
+    <style>
+        /* Styl bazowy - dostosowany pod telefony (Mobile First) */
+        body { background-color: #1a1b1e; color: #c1c2c5; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 15px; box-sizing: border-box;}
+        .container { background-color: #25262b; padding: 15px; border-radius: 8px; width: 100%; max-width: 750px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        h2 { color: white; margin-top: 0; font-size: 16px; margin-bottom: 10px;}
+        
+        .nav-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .nav-btn { background-color: #373a40; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; width: 100%; box-sizing: border-box;}
+        .nav-btn:hover { background-color: #4d5159; }
+        .nav-btn.up { background-color: #1c7ed6; }
+        .nav-btn.up:hover { background-color: #1971c2; }
+        
+        input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; background: #141517; border: 1px solid #373a40; color: white; border-radius: 4px; box-sizing: border-box; font-size: 14px;}
+        
+        .controls { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;}
+        .controls a { color: #4dabf7; cursor: pointer; text-decoration: none; padding: 5px 0;}
+        .controls a:hover { text-decoration: underline;}
+
+        .dir-list { border: 1px solid #373a40; border-radius: 4px; height: 350px; overflow-y: auto; background: #1a1b1e; margin-bottom: 15px; }
+        .dir-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #2c2e33; display: flex; align-items: center; font-weight: bold; font-size: 14px;}
+        .dir-item:hover { background-color: #2c2e33; }
+        
+        .file-item { display: flex; align-items: center; padding: 10px 12px; border-bottom: 1px solid #2c2e33;}
+        .file-item:hover { background-color: #25262b; }
+        .file-item label { cursor: pointer; margin-left: 12px; word-break: break-all; width: 100%; font-size: 14px; line-height: 1.4;}
+        .file-item input[type="checkbox"] { transform: scale(1.5); cursor: pointer; margin: 0; flex-shrink: 0;}
+        
+        .file-type-mkv { color: #fcc419; }
+        .file-type-srt { color: #20c997; }
+
+        .options-bar { background-color: #141517; padding: 12px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #373a40;}
+        .options-bar label { cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: bold; color: #4dabf7; font-size: 14px;}
+        .options-bar input[type="checkbox"] { transform: scale(1.5); flex-shrink: 0;}
+        
+        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
+        .btn { border: none; padding: 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; box-sizing: border-box;}
+        .btn-start { background-color: #2f9e44; color: white; }
+        .btn-start:hover { background-color: #2b8a3e; }
+        .btn-stop { background-color: #e03131; color: white; display: none;}
+        .btn-stop:hover { background-color: #c92a2a; }
+        .btn-delete { background-color: #495057; color: white; }
+        .btn-delete:hover { background-color: #343a40; }
+
+        .status-container { background: #000; border: 1px solid #373a40; border-radius: 4px; padding: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);}
+        .current-file { font-weight: bold; color: #4dabf7; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #373a40; word-break: break-all; font-size: 14px;}
+        .console-box { font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto; color: #20c997; white-space: pre-wrap; display: flex; flex-direction: column;}
+        
+        /* Styl dla Komputerów (ekrany szersze niż 600px) */
+        @media (min-width: 600px) {
+            body { padding: 30px; }
+            .container { padding: 20px; }
+            .nav-bar { flex-direction: row; }
+            .nav-btn { width: auto; }
+            .nav-btn.up { margin-left: auto; }
+            .btn-group { flex-direction: row; }
+            .btn { width: auto; flex: 1; }
+            .btn-delete { flex: 0.5; }
+            .dir-list { height: 260px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav-bar">
+            <button class="nav-btn" onclick="loadDir('/mnt/media/filmy')">🏠 Filmy</button>
+            <button class="nav-btn" onclick="loadDir('/mnt/media/seriale')">📺 Seriale</button>
+            <button class="nav-btn up" onclick="goUp()">⬆️ W górę (Katalog wyżej)</button>
+        </div>
+        
+        <input type="text" id="path-input" readonly>
+
+        <div class="controls">
+            <a onclick="selectAll(true)">Zaznacz wszystkie pliki</a>
+            <a onclick="selectAll(false)">Odznacz wszystkie</a>
+        </div>
+
+        <div class="dir-list" id="dir-list"></div>
+
+        <div class="options-bar">
+            <label>
+                <input type="checkbox" id="chk-save-mode">
+                📁 Zapisz gotowe pliki w podkatalogu "Lektor_PL"
+            </label>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn btn-delete" id="btn-delete" onclick="deleteSelected()">🗑️ Usuń z dysku</button>
+            <button class="btn btn-start" id="btn-start" onclick="startProcessing()">🚀 Rozpocznij Generowanie</button>
+            <button class="btn btn-stop" id="btn-stop" onclick="stopProcessing()">🛑 PRZERWIJ PRZETWARZANIE</button>
+        </div>
+        
+        <div class="status-container">
+            <div class="current-file">Trwa przerabianie: <span id="current-file-name" style="color: white;">Brak (IDLE)</span></div>
+            <div class="console-box" id="console-box"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentPath = "";
+        let parentPath = "";
+        let allFilesData = [];
+
+        function loadDir(path) {
+            fetch('/api/browse?path=' + encodeURIComponent(path))
+                .then(r => r.json())
+                .then(data => {
+                    currentPath = data.current;
+                    parentPath = data.parent;
+                    document.getElementById('path-input').value = currentPath;
+                    allFilesData = data.files;
+
+                    let html = '';
+                    data.dirs.forEach(d => {
+                        html += `<div class="dir-item" onclick="loadDir('${d.path.replace(/\\/g, '\\\\')}')">📁 ${d.name}</div>`;
+                    });
+
+                    data.files.forEach(f => {
+                        let colorClass = f.name.endsWith('.srt') ? 'file-type-srt' : 'file-type-mkv';
+                        html += `
+                        <div class="file-item">
+                            <input type="checkbox" class="file-checkbox" value="${f.path}" id="${f.path}">
+                            <label for="${f.path}" class="${colorClass}">📄 ${f.name}</label>
+                        </div>`;
+                    });
+
+                    document.getElementById('dir-list').innerHTML = html;
+                });
+        }
+
+        function goUp() {
+            if(parentPath) loadDir(parentPath);
+        }
+
+        function selectAll(state) {
+            document.querySelectorAll('.file-checkbox').forEach(cb => cb.checked = state);
+        }
+
+        function deleteSelected() {
+            let selectedFiles = Array.from(document.querySelectorAll('.file-checkbox:checked')).map(cb => cb.value);
+            if (selectedFiles.length === 0) return alert("Zaznacz z listy pliki do usunięcia!");
+            if (confirm(`Uwaga! Czy na pewno chcesz trwale usunąć ${selectedFiles.length} plików z dysku?`)) {
+                fetch('/api/delete', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({files: selectedFiles})
+                }).then(() => loadDir(currentPath));
+            }
+        }
+
+        function startProcessing() {
+            let selectedVideos = [];
+            document.querySelectorAll('.file-checkbox:checked').forEach(cb => {
+                let val = cb.value;
+                if (val.endsWith('.mkv') || val.endsWith('.mp4') || val.endsWith('.avi')) {
+                    selectedVideos.push(val);
+                }
+            });
+
+            if (selectedVideos.length === 0) return alert("Najpierw zaznacz plik WIDEO!");
+
+            let pairs = [];
+            for (let vid of selectedVideos) {
+                let base = vid.substring(0, vid.lastIndexOf('.'));
+                let srtMatch = allFilesData.find(f => (f.path === base + '.srt' || f.path === base + '.pl.srt'));
+                if (srtMatch) {
+                    pairs.push({video: vid, srt: srtMatch.path});
+                } else {
+                    return alert(`Brak napisów dla pliku:\n${vid.split('/').pop()}`);
+                }
+            }
+
+            let saveMode = document.getElementById('chk-save-mode').checked;
+
+            fetch('/api/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({pairs: pairs, save_mode: saveMode})
+            });
+        }
+
+        function stopProcessing() {
+            if(confirm("Jesteś pewien, że chcesz przerwać generowanie lektora w połowie? Proces zostanie zabity.")) {
+                fetch('/api/stop', { method: 'POST' });
+            }
+        }
+
+        function updateStatus() {
+            fetch('/api/status')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('current-file-name').innerText = data.current_file;
+                    
+                    let consoleBox = document.getElementById('console-box');
+                    let isScrolledToBottom = consoleBox.scrollHeight - consoleBox.clientHeight <= consoleBox.scrollTop + 1;
+                    
+                    consoleBox.innerText = data.output.join('\n');
+                    if (isScrolledToBottom) {
+                        consoleBox.scrollTop = consoleBox.scrollHeight;
+                    }
+
+                    if(data.is_processing) {
+                        document.getElementById('btn-start').style.display = 'none';
+                        document.getElementById('btn-delete').style.display = 'none';
+                        document.getElementById('btn-stop').style.display = 'block';
+                    } else {
+                        document.getElementById('btn-start').style.display = 'block';
+                        document.getElementById('btn-delete').style.display = 'block';
+                        document.getElementById('btn-stop').style.display = 'none';
+                    }
+                }).catch(() => {});
+        }
+
+        loadDir('/mnt/media/filmy');
+        setInterval(updateStatus, 1000);
+    </script>
+</body>
+</html>

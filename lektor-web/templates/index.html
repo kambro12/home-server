@@ -4,80 +4,255 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Lektor AI</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Styl bazowy - dostosowany pod telefony (Mobile First) */
-        body { background-color: #1a1b1e; color: #c1c2c5; font-family: sans-serif; display: flex; justify-content: center; margin: 0; padding: 15px; box-sizing: border-box;}
-        .container { background-color: #25262b; padding: 15px; border-radius: 8px; width: 100%; max-width: 750px; box-sizing: border-box; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        h2 { color: white; margin-top: 0; font-size: 16px; margin-bottom: 10px;}
+        :root {
+            --bg-color: #0b1120;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(30, 41, 59, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-border-hover: rgba(255, 255, 255, 0.2);
+            --glass-input: rgba(15, 23, 42, 0.5);
+            --accent: #3b82f6;
+            --btn-start-bg: rgba(16, 185, 129, 0.2);
+            --btn-start-border: rgba(16, 185, 129, 0.5);
+            --btn-stop-bg: rgba(239, 68, 68, 0.2);
+            --btn-stop-border: rgba(239, 68, 68, 0.5);
+        }
         
-        .nav-bar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
-        .nav-btn { background-color: #373a40; color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 14px; width: 100%; box-sizing: border-box;}
-        .nav-btn:hover { background-color: #4d5159; }
-        .nav-btn.up { background-color: #1c7ed6; }
-        .nav-btn.up:hover { background-color: #1971c2; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         
-        input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; background: #141517; border: 1px solid #373a40; color: white; border-radius: 4px; box-sizing: border-box; font-size: 14px;}
-        
-        .controls { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px;}
-        .controls a { color: #4dabf7; cursor: pointer; text-decoration: none; padding: 5px 0;}
-        .controls a:hover { text-decoration: underline;}
+        body { 
+            background-color: var(--bg-color); 
+            color: var(--text-main); 
+            font-family: 'Outfit', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            min-height: 100vh;
+            margin: 0; 
+            padding: 20px 15px; 
+            position: relative;
+            overflow-x: hidden;
+        }
 
-        .dir-list { border: 1px solid #373a40; border-radius: 4px; height: 350px; overflow-y: auto; background: #1a1b1e; margin-bottom: 15px; }
-        .dir-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #2c2e33; display: flex; align-items: center; font-weight: bold; font-size: 14px;}
-        .dir-item:hover { background-color: #2c2e33; }
-        
-        .file-item { display: flex; align-items: center; padding: 10px 12px; border-bottom: 1px solid #2c2e33;}
-        .file-item:hover { background-color: #25262b; }
-        .file-item label { cursor: pointer; margin-left: 12px; word-break: break-all; width: 100%; font-size: 14px; line-height: 1.4;}
-        .file-item input[type="checkbox"] { transform: scale(1.5); cursor: pointer; margin: 0; flex-shrink: 0;}
-        
-        .file-type-mkv { color: #fcc419; }
-        .file-type-srt { color: #20c997; }
+        /* Animated Mesh Gradient Background */
+        .bg-mesh {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh; z-index: -1;
+            background: 
+                radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.15), transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.12), transparent 50%);
+            animation: meshAnim 15s ease-in-out infinite alternate;
+        }
+        @keyframes meshAnim {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1) translate(-20px, 20px); }
+        }
 
-        .options-bar { background-color: #141517; padding: 12px; border-radius: 4px; margin-bottom: 15px; border: 1px solid #373a40;}
-        .options-bar label { cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: bold; color: #4dabf7; font-size: 14px;}
-        .options-bar input[type="checkbox"] { transform: scale(1.5); flex-shrink: 0;}
+        .container { 
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            padding: 20px; 
+            border-radius: 16px; 
+            width: 100%; 
+            max-width: 750px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
         
-        .btn-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
-        .btn { border: none; padding: 15px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; font-size: 15px; box-sizing: border-box;}
-        .btn-start { background-color: #2f9e44; color: white; }
-        .btn-start:hover { background-color: #2b8a3e; }
-        .btn-stop { background-color: #e03131; color: white; display: none;}
-        .btn-stop:hover { background-color: #c92a2a; }
-        .btn-delete { background-color: #495057; color: white; }
-        .btn-delete:hover { background-color: #343a40; }
+        h2 { color: white; margin-top: 0; font-size: 1.2rem; margin-bottom: 10px; font-weight: 600;}
+        
+        .nav-bar { display: flex; flex-direction: column; gap: 10px; }
+        
+        .nav-btn { 
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: white; 
+            padding: 12px 15px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 500; 
+            font-size: 0.95rem; 
+            font-family: inherit;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .nav-btn:hover { background: rgba(255, 255, 255, 0.1); border-color: var(--glass-border-hover); transform: translateY(-2px); }
+        .nav-btn:active { transform: translateY(0); }
+        .nav-btn.up { background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.5); }
+        .nav-btn.up:hover { background: rgba(59, 130, 246, 0.3); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2); }
+        
+        input[type="text"] { 
+            width: 100%; 
+            padding: 12px 15px; 
+            background: var(--glass-input); 
+            border: 1px solid var(--glass-border); 
+            color: var(--text-main); 
+            border-radius: 8px; 
+            font-size: 0.9rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus { border-color: var(--accent); }
+        
+        .controls { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 0 5px; }
+        .controls a { color: #60a5fa; cursor: pointer; text-decoration: none; transition: color 0.2s; }
+        .controls a:hover { color: #93c5fd; }
 
-        .status-container { background: #000; border: 1px solid #373a40; border-radius: 4px; padding: 12px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5);}
-        .current-file { font-weight: bold; color: #4dabf7; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #373a40; word-break: break-all; font-size: 14px;}
-        .console-box { font-family: monospace; font-size: 12px; height: 150px; overflow-y: auto; color: #20c997; white-space: pre-wrap; display: flex; flex-direction: column;}
+        .dir-list { 
+            border: 1px solid var(--glass-border); 
+            border-radius: 8px; 
+            height: 350px; 
+            overflow-y: auto; 
+            background: var(--glass-input); 
+        }
         
-        /* Styl dla Komputerów (ekrany szersze niż 600px) */
-        @media (min-width: 600px) {
-            body { padding: 30px; }
-            .container { padding: 20px; }
+        /* Scrollbar styling */
+        .dir-list::-webkit-scrollbar, .console-box::-webkit-scrollbar { width: 8px; }
+        .dir-list::-webkit-scrollbar-track, .console-box::-webkit-scrollbar-track { background: transparent; }
+        .dir-list::-webkit-scrollbar-thumb, .console-box::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+        
+        .dir-item { 
+            padding: 12px 15px; 
+            cursor: pointer; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            display: flex; 
+            align-items: center; 
+            font-weight: 500; 
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+        .dir-item:hover { background-color: rgba(255,255,255,0.05); }
+        
+        .file-item { display: flex; align-items: center; padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;}
+        .file-item:hover { background-color: rgba(255,255,255,0.03); }
+        .file-item label { cursor: pointer; margin-left: 12px; word-break: break-all; width: 100%; font-size: 0.9rem; line-height: 1.4; display: flex; align-items: center;}
+        .file-item input[type="checkbox"] { transform: scale(1.2); cursor: pointer; margin: 0; flex-shrink: 0; accent-color: var(--accent); }
+        
+        .file-type-mkv { color: #fde68a; } /* pastel yellow */
+        .file-type-srt { color: #6ee7b7; } /* pastel green */
+
+        .options-bar { 
+            background-color: var(--glass-input); 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid var(--glass-border);
+        }
+        .options-bar label { cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 500; color: #93c5fd; font-size: 0.9rem;}
+        .options-bar input[type="checkbox"] { transform: scale(1.2); flex-shrink: 0; accent-color: var(--accent);}
+        
+        .btn-group { display: flex; flex-direction: column; gap: 10px; }
+        .btn { 
+            border: 1px solid; 
+            padding: 15px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            width: 100%; 
+            font-size: 1rem; 
+            font-family: inherit;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-start { background-color: var(--btn-start-bg); border-color: var(--btn-start-border); color: #6ee7b7; text-shadow: 0 0 10px rgba(110, 231, 183, 0.3);}
+        .btn-start:hover { background-color: rgba(16, 185, 129, 0.3); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2); color: #a7f3d0;}
+        
+        .btn-stop { background-color: var(--btn-stop-bg); border-color: var(--btn-stop-border); color: #fca5a5; display: none; text-shadow: 0 0 10px rgba(252, 165, 165, 0.3);}
+        .btn-stop:hover { background-color: rgba(239, 68, 68, 0.3); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2); color: #fecaca;}
+        
+        .btn-delete { background-color: rgba(255, 255, 255, 0.05); border-color: var(--glass-border); color: var(--text-muted); }
+        .btn-delete:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--glass-border-hover); transform: translateY(-2px); color: white;}
+
+        .status-container { 
+            background: rgba(0,0,0,0.3); 
+            border: 1px solid var(--glass-border); 
+            border-radius: 8px; 
+            padding: 15px; 
+        }
+        .current-file { 
+            font-weight: 500; 
+            color: #93c5fd; 
+            margin-bottom: 12px; 
+            padding-bottom: 12px; 
+            border-bottom: 1px solid rgba(255,255,255,0.05); 
+            word-break: break-all; 
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Pulsing animation for active processing */
+        @keyframes pulseText {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; text-shadow: 0 0 8px rgba(147, 197, 253, 0.6); }
+            100% { opacity: 0.6; }
+        }
+        .processing-active { animation: pulseText 2s infinite; color: #bfdbfe !important; }
+
+        .console-box { 
+            font-family: 'Courier New', Courier, monospace; 
+            font-size: 0.8rem; 
+            height: 150px; 
+            overflow-y: auto; 
+            color: #6ee7b7; 
+            white-space: pre-wrap; 
+            display: flex; 
+            flex-direction: column;
+            line-height: 1.4;
+        }
+        
+        /* Styl dla Komputerów */
+        @media (min-width: 650px) {
+            body { padding: 40px; }
+            .container { padding: 30px; gap: 20px;}
             .nav-bar { flex-direction: row; }
-            .nav-btn { width: auto; }
-            .nav-btn.up { margin-left: auto; }
+            .nav-btn { width: auto; flex: 1; }
+            .nav-btn.up { flex: 1.5; }
             .btn-group { flex-direction: row; }
-            .btn { width: auto; flex: 1; }
-            .btn-delete { flex: 0.5; }
-            .dir-list { height: 260px; }
+            .btn { width: auto; flex: 1.5; }
+            .btn-delete { flex: 1; }
+            .dir-list { height: 280px; }
         }
     </style>
 </head>
 <body>
+    <div class="bg-mesh"></div>
     <div class="container">
+        <header style="text-align: center; margin-bottom: 10px;">
+            <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 5px; background: linear-gradient(135deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Lektor AI</h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px;">Generator Audio PL</p>
+        </header>
+
         <div class="nav-bar">
-            <button class="nav-btn" onclick="loadDir('/mnt/media/filmy')">🏠 Filmy</button>
-            <button class="nav-btn" onclick="loadDir('/mnt/media/seriale')">📺 Seriale</button>
-            <button class="nav-btn up" onclick="goUp()">⬆️ W górę (Katalog wyżej)</button>
+            <button class="nav-btn" onclick="loadDir('/mnt/media/filmy')"><i class="fa-solid fa-film"></i> Filmy</button>
+            <button class="nav-btn" onclick="loadDir('/mnt/media/seriale')"><i class="fa-solid fa-tv"></i> Seriale</button>
+            <button class="nav-btn up" onclick="goUp()"><i class="fa-solid fa-level-up-alt"></i> W górę</button>
         </div>
         
-        <input type="text" id="path-input" readonly>
+        <input type="text" id="path-input" readonly placeholder="Ścieżka...">
 
         <div class="controls">
-            <a onclick="selectAll(true)">Zaznacz wszystkie pliki</a>
-            <a onclick="selectAll(false)">Odznacz wszystkie</a>
+            <a onclick="selectAll(true)"><i class="fa-solid fa-check-square"></i> Zaznacz wszystko</a>
+            <a onclick="selectAll(false)"><i class="fa-regular fa-square"></i> Odznacz wszystko</a>
         </div>
 
         <div class="dir-list" id="dir-list"></div>
@@ -85,18 +260,18 @@
         <div class="options-bar">
             <label>
                 <input type="checkbox" id="chk-save-mode">
-                📁 Zapisz gotowe pliki w podkatalogu "Lektor_PL"
+                <i class="fa-solid fa-folder-tree" style="color:#fbbf24;"></i> Zapisz w podkatalogu "Lektor_PL"
             </label>
         </div>
 
         <div class="btn-group">
-            <button class="btn btn-delete" id="btn-delete" onclick="deleteSelected()">🗑️ Usuń z dysku</button>
-            <button class="btn btn-start" id="btn-start" onclick="startProcessing()">🚀 Rozpocznij Generowanie</button>
-            <button class="btn btn-stop" id="btn-stop" onclick="stopProcessing()">🛑 PRZERWIJ PRZETWARZANIE</button>
+            <button class="btn btn-delete" id="btn-delete" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Usuń z dysku</button>
+            <button class="btn btn-start" id="btn-start" onclick="startProcessing()"><i class="fa-solid fa-wand-magic-sparkles"></i> Rozpocznij Generowanie</button>
+            <button class="btn btn-stop" id="btn-stop" onclick="stopProcessing()"><i class="fa-solid fa-circle-stop"></i> Przerwij Przetwarzanie</button>
         </div>
         
         <div class="status-container">
-            <div class="current-file">Trwa przerabianie: <span id="current-file-name" style="color: white;">Brak (IDLE)</span></div>
+            <div class="current-file"><i class="fa-solid fa-microchip"></i> Trwa przerabianie: <span id="current-file-name" style="color: white; margin-left:5px;">Brak (IDLE)</span></div>
             <div class="console-box" id="console-box"></div>
         </div>
     </div>
@@ -117,15 +292,18 @@
 
                     let html = '';
                     data.dirs.forEach(d => {
-                        html += `<div class="dir-item" onclick="loadDir('${d.path.replace(/\\/g, '\\\\')}')">📁 ${d.name}</div>`;
+                        html += `<div class="dir-item" onclick="loadDir('${d.path.replace(/\\/g, '\\\\')}')"><i class="fa-solid fa-folder" style="color: #fbbf24; margin-right: 12px; font-size: 1.1em;"></i> ${d.name}</div>`;
                     });
 
                     data.files.forEach(f => {
-                        let colorClass = f.name.endsWith('.srt') ? 'file-type-srt' : 'file-type-mkv';
+                        let isSrt = f.name.endsWith('.srt') || f.name.endsWith('.pl.srt');
+                        let colorClass = isSrt ? 'file-type-srt' : 'file-type-mkv';
+                        let iconClass = isSrt ? 'fa-file-lines' : 'fa-file-video';
+                        
                         html += `
                         <div class="file-item">
                             <input type="checkbox" class="file-checkbox" value="${f.path}" id="${f.path}">
-                            <label for="${f.path}" class="${colorClass}">📄 ${f.name}</label>
+                            <label for="${f.path}" class="${colorClass}"><i class="fa-solid ${iconClass}" style="margin-right: 10px; font-size: 1.1em;"></i> ${f.name}</label>
                         </div>`;
                     });
 
@@ -194,7 +372,8 @@
             fetch('/api/status')
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('current-file-name').innerText = data.current_file;
+                    let fileNameSpan = document.getElementById('current-file-name');
+                    fileNameSpan.innerText = data.current_file;
                     
                     let consoleBox = document.getElementById('console-box');
                     let isScrolledToBottom = consoleBox.scrollHeight - consoleBox.clientHeight <= consoleBox.scrollTop + 1;
@@ -207,11 +386,13 @@
                     if(data.is_processing) {
                         document.getElementById('btn-start').style.display = 'none';
                         document.getElementById('btn-delete').style.display = 'none';
-                        document.getElementById('btn-stop').style.display = 'block';
+                        document.getElementById('btn-stop').style.display = 'flex';
+                        fileNameSpan.classList.add('processing-active');
                     } else {
-                        document.getElementById('btn-start').style.display = 'block';
-                        document.getElementById('btn-delete').style.display = 'block';
+                        document.getElementById('btn-start').style.display = 'flex';
+                        document.getElementById('btn-delete').style.display = 'flex';
                         document.getElementById('btn-stop').style.display = 'none';
+                        fileNameSpan.classList.remove('processing-active');
                     }
                 }).catch(() => {});
         }
