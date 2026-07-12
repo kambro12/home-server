@@ -1,55 +1,52 @@
-# 🏡 Dell 5040 - Home Server & Homelab
+# 🏡 Dell OptiPlex 5040 - Home Server & Homelab
 
-Zbiór plików konfiguracyjnych mojego domowego serwera i systemu automatyki domowej (Home Assistant).
-Cała konfiguracja opiera się na **Docker Compose** i skupia się na domowym centrum rozrywki, inteligentnym domu (Smart Home) oraz w pełni zautomatyzowanym pobieraniu.
-
-## 💻 Sprzęt
-* **Serwer:** Dell OptiPlex 5040
-* **System operacyjny:** Ubuntu Linux
-* **Akceleracja GPU:** Wykorzystanie iGPU Intela (QuickSync) udostępnionego jako `/dev/dri` do sprzętowego transkodowania wideo.
+Welcome to my personal, fully automated home server environment (Homelab).
+The entire setup is based on **Docker Compose** and runs under a single, unified container network. It focuses on a home entertainment center, Smart Home automation, privacy services, and automated downloading, utilizing **Intel QuickSync** hardware video encoding directly from the server's CPU.
 
 ---
 
-## 🌟 Lista Usług (Kontenerów)
+## 🌟 Services (Containers) List
 
-Poniżej znajduje się pełna lista systemów pracujących w klastrze, skonfigurowana w pliku `docker-compose.yml`:
+Below is a complete list of the systems running "under the hood" of this cluster, as configured in the `docker-compose.yml` file:
 
-### 📺 Multimedia i Przetwarzanie Wideo
-* **[Jellyfin](https://jellyfin.org/)** – Główne domowe centrum multimedialne korzystające ze sprzętowego kodowania wideo.
-* **[Jellyseerr](https://github.com/Fallenbagel/jellyseerr)** – Intuicyjny panel do zamawiania nowych filmów i seriali.
-* **[Jellystat](https://github.com/CyferShepard/Jellystat)** – Rozbudowane statystyki oglądalności sprzężone z bazą PostgreSQL.
-* **[Tdarr](https://tdarr.io/)** – Potężny węzeł transkodujący (Server + Node). W locie, całkowicie automatycznie i bezstratnie odchudza stare formaty wideo (np. XviD) do H.264/HEVC oszczędzając gigabajty przestrzeni.
+### 📺 Multimedia & Video Processing
+* **[Jellyfin](https://jellyfin.org/)** – The main home media center. Mapped with `/dev/dri` access for hardware transcoding support via iGPU.
+* **[Jellyseerr](https://github.com/Fallenbagel/jellyseerr)** – An automated request management panel for discovering and requesting new movies and TV shows.
+* **[Jellystat](https://github.com/CyferShepard/Jellystat)** – Comprehensive watch statistics and tracking integrated with Jellyfin (backed by PostgreSQL).
+* **[Tdarr](https://tdarr.io/)** – A powerful, distributed transcoding node (Server + Node). Automatically scans and losslessly converts old, heavy video files (e.g., XviD) to modern formats (H.264/HEVC) using hardware acceleration (QSV), saving gigabytes of storage space.
 
-### 🎬 Automatyzacja Pobierania (Arr Stack)
-* **qBittorrent** – Niezawodny klient torrentów.
-* **Prowlarr** – Serce całego ekosystemu; spina wszystkie trackery w jednym miejscu.
-* **Sonarr** & **Radarr** – Automatyzacja śledzenia i pobierania odpowiednio seriali i filmów.
-* **Bazarr** – Łowca napisów. Samodzielnie szuka i dociąga brakujące polskie translacje.
-* **Flaresolverr** – Serwer proxy radzący sobie z barierami Cloudflare (kluczowy przy niektórych trackerach).
+### 🎬 Downloading Automation (Arr Stack)
+* **qBittorrent** – A reliable torrent client for downloading content directly to the `/mnt/media` mount.
+* **Prowlarr** – The indexer manager linking all torrent trackers in one place.
+* **Sonarr** & **Radarr** – Automation tools for tracking and downloading TV shows and movies respectively.
+* **Bazarr** – Subtitle hunter. Automatically searches for and downloads missing subtitles.
+* **Flaresolverr** – Proxy server to bypass Cloudflare protection (crucial for some public trackers).
 
-### 🏠 Smart Home i Automatyka
-* **[Home Assistant](https://www.home-assistant.io/)** – Mózg całego inteligentnego domu.
-* **[ESPHome](https://esphome.io/)** – Konfiguracje modułów ESP (inteligentne gniazdka, rolety, głośniki itp.) z kompilacją "w locie".
-* **go2rtc** – Super-wydajny silnik streamingu na żywo dla kamer RTSP.
+### 🏠 Smart Home & Automation
+* **[Home Assistant](https://www.home-assistant.io/)** – The brain of the smart home, with full local network access and Docker Socket integration.
+* **[ESPHome](https://esphome.io/)** – Management and on-the-fly compilation environment for ESP microcontrollers (smart plugs, LED drivers, blinds, sensors, etc.).
+* **go2rtc** – Super-efficient live streaming engine for RTSP security cameras.
 
-### 🎶 Dźwięk i Synteza Mowy
-* **Music-Assistant** – Zaawansowany kombajn do dystrybucji muzyki po całym domu.
-* **[Piper](https://github.com/rhasspy/piper)** – Niezależny, szybki, lokalny system Text-To-Speech (TTS) z polskimi, naturalnie brzmiącymi głosami.
-* **Lektor-web** – Niestandardowy, zbudowany projekt frontendu webowego dla Pipera.
+### 🎶 Audio & Speech Synthesis
+* **Music-Assistant** – Advanced music streaming and distribution center integrated with Home Assistant.
+* **[Piper](https://github.com/rhasspy/piper)** – Independent, fast, local Text-To-Speech (TTS) system based on neural networks. Uses natural-sounding voice models.
+* **Lektor-web** – A custom-built web frontend for Piper.
 
-### 🌐 Inne i Narzędziowe
-* **Cloudflared** – Wystawienie usług na świat przez bezpieczny tunel (bez "dziurawienia" routera).
-* **Local Dashboard (Nginx)** – Niestandardowa, piękna i lokalna tablica. Posiada m.in. skrypty w JavaScript rozpakowujące kanały RSS lokalnych społeczności (np. Devil-Torrents, Electro-Torrent).
-* **Filebrowser** – Intuicyjny menedżer plików przez przeglądarkę do obsługi `/mnt/media`.
-* **Watchtower** – Narzędzie cicho dbające w tle o nocne aktualizacje obrazów Dockera do najnowszych wydań.
-* **Metube** – Frontend do pobierania treści (YT-DLP).
-* **SillyTavern** – Potężny interfejs chat-bota do zabaw z lokalnymi/zewnętrznymi modelami LLM.
-* **Memos** – Podręczny, prywatny notatnik z bazą danych (w stylu małego Twittera).
+### 🌐 Access & Management
+* **Cloudflared** – Exposing local services to the outside world via a secure tunnel (without port-forwarding on the home router).
+* **Local Dashboard (Nginx)** – A dedicated, custom landing page. Features JavaScript scripts to parse local RSS feeds from torrent communities.
+* **Filebrowser** – Intuitive web-based file manager for easy access and management of `/mnt/media`.
+* **Watchtower** – A background utility ensuring silent, nightly updates of Docker images to their latest stable releases.
+* **Metube** – A convenient web frontend based on `yt-dlp` for downloading YouTube videos and music directly to the server.
+* **SillyTavern** – A powerful chat-bot interface for experimenting with local or remote AI models (LLMs).
+* **Memos** – A lightweight, private note-taking hub (similar to a self-hosted Twitter) for quick thoughts and links.
 
 ---
 
-## 🔒 Bezpieczeństwo i Architektura
-* Większość multimediów jest zamontowana pod ścieżką `/mnt/media`.
-* Ze względów bezpieczeństwa wszystkie loginy do trackerów, hasła bazy danych i plik `secrets.yaml` w ESPHome są wykluczone z głównego repozytorium przez reguły `.gitignore`.
+## 🛠️ Storage & Permissions Architecture
+* Most media storage is mounted via a secure **FUSE** system (MergerFS) at `/mnt/media`.
+* Environment variables `PUID=1000` and `PGID=1000` maintain permission consistency, ensuring different containers can edit the same files without "Access Denied" errors.
+* Containers utilizing hardware graphics acceleration (Intel QuickSync) use mapped `/dev/dri` and appropriate permission groups (render/video).
+* For security reasons, credentials, database passwords, and the ESPHome `secrets.yaml` file are excluded from the main public repository via `.gitignore` rules.
 
-*Stworzono z pomocą Antigravity IDE.*
+*Created with the help of Antigravity IDE.*
