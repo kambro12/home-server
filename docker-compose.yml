@@ -189,6 +189,7 @@ services:
       - ./esphome:/config
     environment:
       - ESPHOME_DASHBOARD_USE_PING=true
+      
   nginx-cors:
     image: nginx:alpine
     container_name: nginx-cors
@@ -246,6 +247,7 @@ services:
       - ./memos:/var/opt/memos
     networks:
       - serwer-network
+      
   metube:
     image: ghcr.io/alexta69/metube:latest
     container_name: metube
@@ -256,6 +258,7 @@ services:
       - /mnt/media/muzyka:/downloads
     networks:
       - serwer-network
+      
   sillytavern:
     image: ghcr.io/sillytavern/sillytavern:latest
     container_name: sillytavern
@@ -270,6 +273,7 @@ services:
       - ./sillytavern/data:/home/node/app/data
     networks:
       - serwer-network
+      
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
@@ -285,6 +289,7 @@ services:
       - /mnt/media:/mnt/media
     networks:
       - serwer-network
+      
   piper:
     image: lscr.io/linuxserver/piper:latest
     container_name: piper
@@ -293,11 +298,9 @@ services:
       - PGID=1000
       - TZ=Europe/Warsaw
       - PIPER_VOICE=pl_PL-jarvis_wg_glos-medium
-# - PIPER_VOICE=pl_PL-jarvis_wg_glos-medium
     volumes:
       - ./config_piper:/config
     ports:
-     # - "5000:10200"
       - "10200:10200"
     networks:
       - serwer-network
@@ -323,6 +326,7 @@ services:
       - serwer-network
     depends_on:
       - piper
+      
   jellystat:
     image: cyfershepard/jellystat:latest
     container_name: jellystat
@@ -352,6 +356,7 @@ services:
     networks:
       - serwer-network
     restart: unless-stopped
+    
   tdarr:
     container_name: tdarr
     image: ghcr.io/haveagitgat/tdarr:latest
@@ -396,5 +401,30 @@ services:
     group_add:
       - "44"
       - "991"
+    networks:
+      - serwer-network
+
+  antigravity-webtop:
+    build: ./antigravity-webtop
+    container_name: antigravity-webtop
+    privileged: true
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - SUBFOLDER=/
+    group_add:
+      - "983"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config_antigravity_webtop:/config
+      - /home/user:/workspace
+      - /home/user:/home/user
+      - /mnt:/mnt
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
     networks:
       - serwer-network
