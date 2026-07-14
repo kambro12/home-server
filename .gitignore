@@ -9,5 +9,6 @@ esphome/secrets.yaml
 /*
 !/lektor-web/
 !/esphome/
+esphome/.device-builder.json
 !/dashboard/
 !/.gitignore

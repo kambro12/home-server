@@ -1,0 +1,11 @@
+#EXTM3U
+#EXTINF:-1 tvg-name="Kamera Dom",Kamera Dom
+http://192.168.1.32:1984/api/stream.m3u8?src=kamera_dom
+#EXTINF:-1 tvg-name="Kamera Rejestrator 1",Kamera Rejestrator 1
+http://192.168.1.32:1984/api/stream.m3u8?src=kamera_rejestrator_1
+#EXTINF:-1 tvg-name="Kamera Rejestrator 2",Kamera Rejestrator 2
+http://192.168.1.32:1984/api/stream.m3u8?src=kamera_rejestrator_2
+#EXTINF:-1 tvg-name="Kamera Rejestrator 3",Kamera Rejestrator 3
+http://192.168.1.32:1984/api/stream.m3u8?src=kamera_rejestrator_3
+#EXTINF:-1 tvg-name="Kamera Rejestrator 4",Kamera Rejestrator 4
+http://192.168.1.32:1984/api/stream.m3u8?src=kamera_rejestrator_4

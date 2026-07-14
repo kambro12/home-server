@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dell 5040 | Home Server</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent: #3b82f6;
+            --accent-hover: #60a5fa;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); color: var(--text-main); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; min-height: 100vh; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; }
+        header { text-align: center; margin-bottom: 30px; width: 100%; max-width: 600px; }
+        header h1 { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.05em; margin-bottom: 5px; }
+        header p { color: var(--text-muted); font-size: 0.9rem; }
+        .section-title { width: 100%; max-width: 600px; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin: 20px 0 10px; }
+        .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; max-width: 600px; }
+        @media (min-width: 480px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+        .card { background-color: var(--card-bg); border: 1px solid #334155; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 10px; text-decoration: none; color: var(--text-main); transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease; aspect-ratio: 1 / 1; }
+        @media (hover: hover) { .card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2); } }
+        .card:active { transform: scale(0.95); background-color: #334155; }
+        .card i { font-size: 2.2rem; margin-bottom: 12px; color: var(--accent); transition: color 0.2s ease; }
+        .card:hover i { color: var(--accent-hover); }
+        .card span { font-size: 0.95rem; font-weight: 600; text-align: center; word-break: break-word; }
+        .card .subtitle { font-size: 0.75rem; color: var(--text-muted); margin-top: 3px; font-weight: 400; }
+        .card.router i { color: #10b981; }
+        .card.router:hover i { color: #34d399; }
+        .card.router { border-color: #1e3a2f; }
+        .card.router:hover { border-color: #10b981; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2); }
+        .card.personal i { color: #f59e0b; }
+        .card.personal:hover i { color: #fbbf24; }
+        .card.personal { border-color: #3a2e1a; }
+        .card.personal:hover { border-color: #f59e0b; box-shadow: 0 10px 15px -3px rgba(245, 158, 11, 0.2); }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>DELL 5040</h1>
+        <p>Home Server Dashboard</p>
+    </header>
+
+    <div class="section-title">Serwer</div>
+    <div class="grid">
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8123" class="card">
+            <i class="fa-solid fa-house-laptop"></i>
+            <span>Home Assistant</span>
+            <span class="subtitle">Automatyka</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8096" class="card">
+            <i class="fa-solid fa-film"></i>
+            <span>Jellyfin</span>
+            <span class="subtitle">Media Serwer</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8282" class="card">
+            <i class="fa-solid fa-download"></i>
+            <span>qBittorrent</span>
+            <span class="subtitle">Pobieranie</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:5055" class="card">
+            <i class="fa-solid fa-magnifying-glass-plus"></i>
+            <span>Jellyseerr</span>
+            <span class="subtitle">Żądania</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8989" class="card">
+            <i class="fa-solid fa-tv"></i>
+            <span>Sonarr</span>
+            <span class="subtitle">Seriale</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:7878" class="card">
+            <i class="fa-solid fa-clapperboard"></i>
+            <span>Radarr</span>
+            <span class="subtitle">Filmy</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:9696" class="card">
+            <i class="fa-solid fa-search"></i>
+            <span>Prowlarr</span>
+            <span class="subtitle">Indeksery</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:6767" class="card">
+            <i class="fa-solid fa-closed-captioning"></i>
+            <span>Bazarr</span>
+            <span class="subtitle">Napisy</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8095" class="card">
+            <i class="fa-solid fa-music"></i>
+            <span>Music Assistant</span>
+            <span class="subtitle">Muzyka</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:6052" class="card">
+            <i class="fa-solid fa-microchip"></i>
+            <span>ESPHome</span>
+            <span class="subtitle">IoT Flashing</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:1984" class="card">
+            <i class="fa-solid fa-video"></i>
+            <span>go2rtc</span>
+            <span class="subtitle">Kamery RTSP</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8081" class="card">
+            <i class="fa-solid fa-folder-open"></i>
+            <span>File Browser</span>
+            <span class="subtitle">Pliki</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:8085" class="card">
+            <i class="fa-brands fa-youtube"></i>
+            <span>MeTube</span>
+            <span class="subtitle">Pobieranie muzyki</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:5000" class="card">
+            <i class="fa-solid fa-microphone-lines"></i>
+            <span>Lektor AI</span>
+            <span class="subtitle">Miksowanie audio</span>
+        </a>
+        <!-- Nowa karta: Jellystat -->
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:3000" class="card">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Jellystat</span>
+            <span class="subtitle">Statystyki</span>
+        </a>
+    </div>
+
+    <div class="section-title">Osobiste</div>
+    <div class="grid">
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.32:5230" class="card personal">
+            <i class="fa-solid fa-note-sticky"></i>
+            <span>Memos</span>
+            <span class="subtitle">Notatki</span>
+        </a>
+    </div>
+
+    <div class="section-title">Sieć</div>
+    <div class="grid">
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.1" class="card router">
+            <i class="fa-solid fa-network-wired"></i>
+            <span>Router Główny</span>
+            <span class="subtitle">192.168.1.1</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.150" class="card router">
+            <i class="fa-solid fa-wifi"></i>
+            <span>Router Salon</span>
+            <span class="subtitle">192.168.1.150</span>
+        </a>
+        <a target="_blank" rel="noreferrer noopener" href="http://192.168.1.151" class="card router">
+            <i class="fa-solid fa-wifi"></i>
+            <span>Router Garaż</span>
+            <span class="subtitle">192.168.1.151</span>
+        </a>
+    </div>
+</body>
+</html>

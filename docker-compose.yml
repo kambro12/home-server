@@ -407,13 +407,14 @@ services:
   antigravity-webtop:
     build: ./antigravity-webtop
     container_name: antigravity-webtop
-    privileged: true
-    security_opt:
-      - seccomp:unconfined
+    shm_size: "1gb"
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Warsaw
+      - LC_ALL=pl_PL.UTF-8
+      - LANG=pl_PL.UTF-8
+      - LANGUAGE=pl_PL.UTF-8
       - SUBFOLDER=/
     group_add:
       - "983"
