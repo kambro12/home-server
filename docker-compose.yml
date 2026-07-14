@@ -259,21 +259,6 @@ services:
     networks:
       - serwer-network
       
-  sillytavern:
-    image: ghcr.io/sillytavern/sillytavern:latest
-    container_name: sillytavern
-    restart: unless-stopped
-    environment:
-      - ZS_DISABLE_WHITELIST=true
-      - ZS_ENABLE_USER_ACCOUNTS=false
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./sillytavern/config:/home/node/app/config
-      - ./sillytavern/data:/home/node/app/data
-    networks:
-      - serwer-network
-      
   bazarr:
     image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
