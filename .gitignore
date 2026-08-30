@@ -12,3 +12,4 @@ esphome/secrets.yaml
 esphome/.device-builder.json
 !/dashboard/
 !/.gitignore
+!/pdf-filler/

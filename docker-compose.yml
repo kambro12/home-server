@@ -85,8 +85,10 @@ services:
     networks:
       - serwer-network
 
+  # Nieoficjalny obraz Music Assistant (zawiera wtyczkę YouTube Music Free)
+  # Oryginalny obraz to: ghcr.io/music-assistant/server:stable
   music-assistant:
-    image: ghcr.io/music-assistant/server:stable
+    image: ghcr.io/sproft/music-assistant-ytmusic:latest
     container_name: music-assistant
     restart: unless-stopped
     network_mode: host
@@ -414,3 +416,33 @@ services:
     restart: unless-stopped
     networks:
       - serwer-network
+
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ./config_ollama:/root/.ollama
+    networks:
+      - serwer-network
+
+  pdf-filler:
+    build: ./pdf-filler
+    container_name: pdf-filler
+    restart: unless-stopped
+    ports:
+      - "7860:7860"
+    volumes:
+      - pdf_filler_data:/app/data
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    networks:
+      - serwer-network
+    depends_on:
+      - ollama
+
+volumes:
+  pdf_filler_data:

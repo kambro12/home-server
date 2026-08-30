@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Filler - AI</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f4f4f5;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: #18181b;
+            color: #fff;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        /* Split Pane Layout */
+        .split-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 50px);
+            width: 100%;
+        }
+
+        .pane-top {
+            flex: 1 1 50%;
+            background: #e4e4e7;
+            position: relative;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+        }
+
+        .resizer {
+            background: #d4d4d8;
+            height: 8px;
+            cursor: row-resize;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background 0.2s;
+        }
+        .resizer:hover { background: #a1a1aa; }
+        .resizer::after { content: "|||"; color: #71717a; font-size: 10px; transform: rotate(90deg); }
+
+        .pane-bottom {
+            flex: 1 1 50%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            min-height: 150px;
+        }
+
+        /* PDF Document View */
+        #doc-container {
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            /* width/height set via js */
+        }
+        #doc-img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        /* Draggable Text Blocks */
+        .text-block {
+            position: absolute;
+            background: rgba(59, 130, 246, 0.1);
+            border: 2px dashed #3b82f6;
+            color: #1e3a8a;
+            padding: 2px 5px;
+            font-size: 14px;
+            cursor: grab;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .text-block:active { cursor: grabbing; }
+
+        /* Chat UI */
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .chat-msg {
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+        .msg-user {
+            background: #3b82f6;
+            color: #fff;
+            align-self: flex-end;
+        }
+        .msg-ai {
+            background: #f4f4f5;
+            color: #27272a;
+            align-self: flex-start;
+            border: 1px solid #e4e4e7;
+        }
+        .chat-input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #e4e4e7;
+            background: #fff;
+        }
+        .chat-input-area input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #d4d4d8;
+            border-radius: 4px;
+            margin-right: 10px;
+            font-size: 16px;
+        }
+        .btn {
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn:hover { background: #2563eb; }
+        .btn:disabled { background: #a1a1aa; cursor: not-allowed; }
+
+        .loading-overlay {
+            position: absolute; top:0; left:0; right:0; bottom:0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center; align-items: center;
+            z-index: 50;
+            font-size: 1.2rem; font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <div><strong>PDF Filler</strong> - AI Local</div>
+        <div class="controls">
+            <input type="text" id="profile-name" placeholder="Twój Profil (np. Jan)" value="Jan">
+            <label style="margin-right: 15px; font-size: 14px; cursor: pointer;"><input type="checkbox" id="compress-pdf" checked> Kompresuj PDF</label>
+            <label style="margin-right: 15px; font-size: 14px; cursor: pointer;" title="Tylko dla PDFów tekstowych. Wyłącza powolny OCR."><input type="checkbox" id="fast-mode"> Tryb szybki (bez OCR)</label>
+            <input type="file" id="file-upload" accept="application/pdf" style="display: none;">
+            <button class="btn" onclick="document.getElementById('file-upload').click()">Wgraj PDF</button>
+            <button class="btn" id="btn-save" disabled onclick="generatePDF()">Generuj Wypełniony PDF</button>
+        </div>
+    </div>
+
+    <div class="split-container" id="split-container">
+        <div class="pane-top" id="pane-top">
+            <div id="loading-pdf" class="loading-overlay">Analizowanie PDF modelem Docling...</div>
+            <div id="doc-container" style="display: none;">
+                <img id="doc-img" src="" alt="Document Preview">
+                <!-- Blocks will go here -->
+            </div>
+        </div>
+        
+        <div class="resizer" id="resizer"></div>
+        
+        <div class="pane-bottom" id="pane-bottom">
+            <div class="chat-history" id="chat-history">
+                <div class="chat-msg msg-ai">Wgraj najpierw dokument PDF. Następnie wypytam Cię o dane, a wygenerowane bloki tekstu będziesz mógł przesunąć na dokument!</div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chat-input" placeholder="Wpisz odpowiedź..." disabled onkeypress="if(event.key === 'Enter') sendMessage()">
+                <button class="btn" id="btn-send" disabled onclick="sendMessage()">Wyślij</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Split pane logic
+        const resizer = document.getElementById('resizer');
+        const paneTop = document.getElementById('pane-top');
+        const paneBottom = document.getElementById('pane-bottom');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'row-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const containerHeight = document.getElementById('split-container').clientHeight;
+            const newHeight = e.clientY - 50; // offset top bar
+            if (newHeight > 100 && newHeight < containerHeight - 100) {
+                paneTop.style.flex = `0 0 ${newHeight}px`;
+                paneBottom.style.flex = `1 1 0%`;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+        });
+
+        // App state
+        let currentSession = null;
+        let originalPdfWidth = 0;
+        let originalPdfHeight = 0;
+        let textBlocks = [];
+
+        // Upload PDF
+        document.getElementById('file-upload').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            document.getElementById('loading-pdf').style.display = 'flex';
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("fast_mode", document.getElementById('fast-mode').checked);
+
+            try {
+                const res = await fetch('/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                
+                currentSession = data.session_id;
+                originalPdfWidth = data.width;
+                originalPdfHeight = data.height;
+                
+                const img = document.getElementById('doc-img');
+                img.src = "data:image/png;base64," + data.image_b64;
+                
+                // Set container aspect ratio to match PDF
+                const container = document.getElementById('doc-container');
+                container.style.display = 'block';
+                // Adjust width to fit pane visually but keep relative tracking
+                container.style.width = '100%';
+                container.style.maxWidth = '800px'; 
+                
+                document.getElementById('chat-input').disabled = false;
+                document.getElementById('btn-send').disabled = false;
+                document.getElementById('btn-save').disabled = false;
+                
+                addMessage("Dokument wczytany i przetworzony. Analizuję potrzebne dane...", 'ai');
+                
+                // Initial prompt to LLM to start asking questions
+                await chatWithModel("Przeanalizuj wgrany dokument i zacznij zadawać mi pytania o brakujące informacje.");
+                
+            } catch (err) {
+                alert("Błąd wgrywania: " + err);
+            } finally {
+                document.getElementById('loading-pdf').style.display = 'none';
+            }
+        });
+
+        async function chatWithModel(message) {
+            const profile = document.getElementById('profile-name').value;
+            try {
+                const res = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: currentSession, message: message, profile_name: profile })
+                });
+                const data = await res.json();
+                
+                let reply = data.reply;
+                
+                // Parse for [KLOCEK: text]
+                const blockRegex = /\[KLOCEK:\s*(.*?)\]/g;
+                let match;
+                while ((match = blockRegex.exec(reply)) !== null) {
+                    createDraggableBlock(match[1]);
+                }
+                
+                reply = reply.replace(blockRegex, '<b>(Wygenerowano pole: $1)</b>');
+                addMessage(reply, 'ai');
+                
+            } catch (err) {
+                addMessage("Błąd serwera LLM.", 'ai');
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg || !currentSession) return;
+            
+            addMessage(msg, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            const typingId = addMessage("Pisze...", 'ai');
+            await chatWithModel(msg);
+            document.getElementById(typingId).remove();
+        }
+
+        function addMessage(text, type) {
+            const id = 'msg-' + Date.now();
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = `chat-msg msg-${type}`;
+            div.innerHTML = text;
+            document.getElementById('chat-history').appendChild(div);
+            div.scrollIntoView({behavior: 'smooth'});
+            return id;
+        }
+
+        function createDraggableBlock(text) {
+            const container = document.getElementById('doc-container');
+            const block = document.createElement('div');
+            block.className = 'text-block';
+            block.innerText = text;
+            block.style.left = '50px';
+            block.style.top = '50px';
+            
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 50;
+            let yOffset = 50;
+
+            block.addEventListener('mousedown', dragStart);
+            document.addEventListener('mouseup', dragEnd);
+            document.addEventListener('mousemove', drag);
+
+            function dragStart(e) {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                if (e.target === block) {
+                    isDragging = true;
+                }
+            }
+            function dragEnd() {
+                initialX = currentX;
+                initialY = currentY;
+                isDragging = false;
+            }
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    block.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+                }
+            }
+            
+            container.appendChild(block);
+            textBlocks.push({ el: block, text: text, xOffset: xOffset, yOffset: yOffset });
+        }
+
+        async function generatePDF() {
+            if (!currentSession) return;
+            document.getElementById('btn-save').innerText = 'Generowanie...';
+            
+            const container = document.getElementById('doc-container');
+            const img = document.getElementById('doc-img');
+            
+            // Calculate relative coordinates
+            const scaleX = originalPdfWidth / img.clientWidth;
+            const scaleY = originalPdfHeight / img.clientHeight;
+            
+            const payloadBlocks = textBlocks.map(b => {
+                // To get actual rendered left/top ignoring transforms for a moment, we use bounding rects
+                const blockRect = b.el.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                
+                const relativeX = blockRect.left - containerRect.left;
+                const relativeY = blockRect.top - containerRect.top;
+                
+                return {
+                    text: b.text,
+                    x: relativeX * scaleX,
+                    y: (relativeY + 12) * scaleY, // +12 to account for font baseline approx
+                    page: 0
+                }
+            });
+
+            try {
+                const res = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: currentSession, blocks: payloadBlocks, compress: document.getElementById('compress-pdf').checked })
+                });
+                
+                if (res.ok) {
+                    const blob = await res.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "Wypelniony_Dokument.pdf";
+                    a.click();
+                } else {
+                    alert("Błąd generowania.");
+                }
+            } catch (err) {
+                alert(err);
+            } finally {
+                document.getElementById('btn-save').innerText = 'Generuj Wypełniony PDF';
+            }
+        }
+    </script>
+</body>
+</html>
