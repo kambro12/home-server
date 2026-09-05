@@ -389,31 +389,7 @@ services:
     networks:
       - serwer-network
 
-  antigravity-webtop:
-    build: ./antigravity-webtop
-    container_name: antigravity-webtop
-    shm_size: "1gb"
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Warsaw
-      - LC_ALL=pl_PL.UTF-8
-      - LANG=pl_PL.UTF-8
-      - LANGUAGE=pl_PL.UTF-8
-      - SUBFOLDER=/
-    group_add:
-      - "983"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./config_antigravity_webtop:/config
-      - /home/user:/workspace
-      - /home/user:/home/user
-      - /mnt:/mnt
-    ports:
-      - "3001:3001"
-    restart: unless-stopped
-    networks:
-      - serwer-network
+
 
   portainer:
     image: portainer/portainer-ce:latest

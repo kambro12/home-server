@@ -391,23 +391,178 @@
             <span class="subtitle">192.168.1.151</span>
         </a>
     </div>
-    <div class="section-title">Torrenty</div>
-    <div class="grid">
-        <a target="_blank" rel="noreferrer noopener" href="https://electro-torrent.pl/" class="card">
-            <i class="fa-solid fa-download"></i>
-            <span>Electro-Torrent</span>
-            <span class="subtitle">Tracker</span>
-        </a>
-        <a target="_blank" rel="noreferrer noopener" href="https://devil-torrents.pl/" class="card">
-            <i class="fa-solid fa-download"></i>
-            <span>Devil-Torrents</span>
-            <span class="subtitle">Tracker</span>
-        </a>
-        <a target="_blank" rel="noreferrer noopener" href="https://polskie-torrenty.eu/" class="card">
-            <i class="fa-solid fa-download"></i>
-            <span>Polskie-Torrenty</span>
-            <span class="subtitle">Tracker</span>
-        </a>
+    <div class="section-title">Najnowsze Torrenty</div>
+    <div class="torrent-panel">
+        <div class="torrent-tabs">
+            <button class="torrent-tab active" onclick="loadTorrents(event, 'electro')">Electro-Torrent</button>
+            <button class="torrent-tab" onclick="loadTorrents(event, 'devil')">Devil-Torrents</button>
+            <button class="torrent-tab" onclick="loadTorrents(event, 'pt')">Polskie-Torrenty</button>
+        </div>
+        <div class="torrent-list" id="torrent-list">
+            <div class="torrent-loader"><i class="fa-solid fa-spinner fa-spin"></i> Ładowanie...</div>
+        </div>
     </div>
+
+    <script>
+        const proxyBase = "http://192.168.1.32:2345/rss/";
+        
+        const sources = {
+            'electro': [
+                'electro/rss.php?cat=769',
+                'electro/rss.php?cat=770',
+                'electro/rss.php?cat=4',
+                'electro/rss.php?cat=7'
+            ],
+            'devil': [
+                'devil/rss/kategoria/Filmy%20x264%2Fh264',
+                'devil/rss/kategoria/Filmy%20x265%2Fh265',
+                'devil/rss/kategoria/TV%2FSeriale'
+            ],
+            'pt': [
+                'pt/rss.php?limit=100'
+            ]
+        };
+
+        async function fetchRSS(url) {
+            try {
+                const response = await fetch(proxyBase + url);
+                if (!response.ok) {
+                    return { error: "HTTP " + response.status };
+                }
+                const text = await response.text();
+                const parser = new DOMParser();
+                const safeText = text.replace(/<link[^>]*>/gi, "<rsslink>").replace(/<\/link>/gi, "</rsslink>");
+                const doc = parser.parseFromString(safeText, "text/html");
+                return doc;
+            } catch (e) {
+                return { error: e.message };
+            }
+        }
+
+        function parseItems(doc, sourceId) {
+            if (!doc || doc.error || !doc.querySelectorAll) return [];
+            const items = doc.querySelectorAll("item");
+            const result = [];
+            items.forEach(item => {
+                const title = item.querySelector("title")?.textContent || "Brak tytułu";
+                let link = item.querySelector("rsslink")?.textContent || "#";
+                
+                if (link !== "#" && !link.startsWith("http")) {
+                    if (sourceId === 'electro') link = "https://electro-torrent.pl/" + link.replace(/^\//, '');
+                    else if (sourceId === 'devil') link = "https://devil-torrents.pl/" + link.replace(/^\//, '');
+                    else if (sourceId === 'pt') link = "https://polskie-torrenty.eu/" + link.replace(/^\//, '');
+                }
+
+                let pubDate = item.querySelector("pubDate")?.textContent || item.querySelector("pubdate")?.textContent || "";
+                
+                if (sourceId === 'pt') {
+                    const tLower = title.toLowerCase();
+                    const isVideo = tLower.includes('1080p') || tLower.includes('720p') || tLower.includes('2160p') || tLower.includes('4k') ||
+                                    tLower.includes('x264') || tLower.includes('x265') || tLower.includes('h264') || tLower.includes('h265') ||
+                                    tLower.includes('bluray') || tLower.includes('web-dl') || tLower.includes('brrip') || tLower.includes('dvdrip') ||
+                                    tLower.includes('lektor') || tLower.includes('dubbing') || tLower.includes('napisy') ||
+                                    tLower.match(/s\d{2}e\d{2}/) || tLower.includes('sezon');
+                    if (!isVideo) return;
+                }
+
+                try {
+                    if (pubDate && pubDate.trim() !== "") {
+                        const d = new Date(pubDate);
+                        if (!isNaN(d)) {
+                            pubDate = d.toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit' });
+                        } else {
+                            pubDate = "";
+                        }
+                    } else {
+                        pubDate = "";
+                    }
+                } catch(e) {
+                    pubDate = "";
+                }
+
+                result.push({ title, link, pubDate });
+            });
+            return result;
+        }
+
+        async function loadTorrents(event, sourceId) {
+            if(event) {
+                document.querySelectorAll('.torrent-tab').forEach(btn => btn.classList.remove('active'));
+                event.currentTarget.classList.add('active');
+            }
+
+            const listEl = document.getElementById('torrent-list');
+            listEl.innerHTML = '<div class="torrent-loader"><i class="fa-solid fa-spinner fa-spin" style="font-size: 1.5em; margin-bottom: 10px; display:block;"></i> Pobieranie nowości...</div>';
+
+            let allItems = [];
+            let lastError = null;
+            
+            if (sourceId === 'pt') {
+                try {
+                    const response = await fetch(proxyBase + 'pt/');
+                    if (!response.ok) throw new Error("HTTP " + response.status);
+                    const text = await response.text();
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(text, "text/html");
+                    
+                    const items = doc.querySelectorAll('.sliderImages a.lamirek');
+                    items.forEach(item => {
+                        const title = item.getAttribute('title') || 'Brak tytułu';
+                        let href = item.getAttribute('href') || '#';
+                        if (href.startsWith('/')) href = 'https://polskie-torrenty.eu' + href;
+                        
+                        allItems.push({
+                            title: title,
+                            link: href,
+                            pubDate: ''
+                        });
+                    });
+                } catch (e) {
+                    lastError = e.message;
+                }
+            } else {
+                const urls = sources[sourceId];
+                for (const url of urls) {
+                    const xml = await fetchRSS(url);
+                    if (xml && xml.error) {
+                        lastError = xml.error;
+                    } else {
+                        const items = parseItems(xml, sourceId);
+                        allItems = allItems.concat(items);
+                    }
+                }
+            }
+
+            allItems = allItems.slice(0, 30);
+
+            if (allItems.length === 0) {
+                listEl.innerHTML = `<div class="torrent-loader">Brak wyników. ${lastError ? 'Błąd: ' + lastError : ''}</div>`;
+                return;
+            }
+
+            let html = '';
+            allItems.forEach(item => {
+                let isSeries = item.title.toLowerCase().match(/s\d{2}e\d{2}/) || item.title.toLowerCase().includes('sezon');
+                let icon = isSeries ? '<i class="fa-solid fa-tv" style="color: #60a5fa;"></i>' : '<i class="fa-solid fa-film" style="color: #34d399;"></i>';
+                let typeBadge = isSeries ? '<span class="torrent-type type-series">Serial</span>' : '<span class="torrent-type type-movie">Film</span>';
+
+                html += `
+                    <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="torrent-item">
+                        <div class="torrent-icon">${icon}</div>
+                        <div class="torrent-details">
+                            <div class="torrent-title">${item.title}</div>
+                            <div class="torrent-meta">${typeBadge} <span>${item.pubDate}</span></div>
+                        </div>
+                    </a>
+                `;
+            });
+
+            listEl.innerHTML = html;
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTorrents(null, 'electro');
+        });
+    </script>
 </body>
 </html>

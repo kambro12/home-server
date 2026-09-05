@@ -181,6 +181,9 @@
         .btn-delete { background-color: rgba(255, 255, 255, 0.05); border-color: var(--glass-border); color: var(--text-muted); }
         .btn-delete:hover { background-color: rgba(255, 255, 255, 0.1); border-color: var(--glass-border-hover); transform: translateY(-2px); color: white;}
 
+        .btn-download { background-color: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.5); color: #c4b5fd; text-shadow: 0 0 10px rgba(139, 92, 246, 0.3); }
+        .btn-download:hover { background-color: rgba(139, 92, 246, 0.3); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139, 92, 246, 0.2); color: #ddd6fe;}
+
         .status-container { 
             background: rgba(0,0,0,0.3); 
             border: 1px solid var(--glass-border); 
@@ -200,6 +203,25 @@
             gap: 8px;
         }
         
+        /* Pasek postępu */
+        .progress-bar-container {
+            width: 100%;
+            height: 12px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            display: none;
+            border: 1px solid var(--glass-border);
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #3b82f6, #10b981);
+            transition: width 0.3s ease;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+
         /* Pulsing animation for active processing */
         @keyframes pulseText {
             0% { opacity: 0.6; }
@@ -227,9 +249,9 @@
             .nav-bar { flex-direction: row; }
             .nav-btn { width: auto; flex: 1; }
             .nav-btn.up { flex: 1.5; }
-            .btn-group { flex-direction: row; }
-            .btn { width: auto; flex: 1.5; }
-            .btn-delete { flex: 1; }
+            .btn-group { flex-direction: row; flex-wrap: wrap; }
+            .btn { width: auto; flex: 1; }
+            .btn-start { flex: 2; }
             .dir-list { height: 280px; }
         }
     </style>
@@ -239,7 +261,7 @@
     <div class="container">
         <header style="text-align: center; margin-bottom: 10px;">
             <h1 style="font-size: 2rem; font-weight: 700; margin-bottom: 5px; background: linear-gradient(135deg, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Lektor AI</h1>
-            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px;">Generator Audio PL</p>
+            <p style="color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px;">Generator Audio PL + QNapi</p>
         </header>
 
         <div class="nav-bar">
@@ -265,13 +287,15 @@
         </div>
 
         <div class="btn-group">
-            <button class="btn btn-delete" id="btn-delete" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Usuń z dysku</button>
-            <button class="btn btn-start" id="btn-start" onclick="startProcessing()"><i class="fa-solid fa-wand-magic-sparkles"></i> Rozpocznij Generowanie</button>
-            <button class="btn btn-stop" id="btn-stop" onclick="stopProcessing()"><i class="fa-solid fa-circle-stop"></i> Przerwij Przetwarzanie</button>
+            <button class="btn btn-delete" id="btn-delete" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Usuń</button>
+            <button class="btn btn-download" id="btn-download" onclick="downloadSubs()"><i class="fa-solid fa-cloud-arrow-down"></i> Pobierz napisy (QNapi)</button>
+            <button class="btn btn-start" id="btn-start" onclick="startProcessing()"><i class="fa-solid fa-wand-magic-sparkles"></i> Generuj Lektora</button>
+            <button class="btn btn-stop" id="btn-stop" onclick="stopProcessing()"><i class="fa-solid fa-circle-stop"></i> Przerwij</button>
         </div>
         
         <div class="status-container">
             <div class="current-file"><i class="fa-solid fa-microchip"></i> Trwa przerabianie: <span id="current-file-name" style="color: white; margin-left:5px;">Brak (IDLE)</span></div>
+            <div class="progress-bar-container" id="progress-container"><div class="progress-bar" id="progress-bar"></div></div>
             <div class="console-box" id="console-box"></div>
         </div>
     </div>
@@ -296,7 +320,7 @@
                     });
 
                     data.files.forEach(f => {
-                        let isSrt = f.name.endsWith('.srt') || f.name.endsWith('.pl.srt');
+                        let isSrt = f.name.endsWith('.srt') || f.name.endsWith('.pl.srt') || f.name.endsWith('.txt');
                         let colorClass = isSrt ? 'file-type-srt' : 'file-type-mkv';
                         let iconClass = isSrt ? 'fa-file-lines' : 'fa-file-video';
                         
@@ -331,6 +355,30 @@
             }
         }
 
+        function downloadSubs() {
+            let selectedVideos = [];
+            document.querySelectorAll('.file-checkbox:checked').forEach(cb => {
+                let val = cb.value;
+                if (val.endsWith('.mkv') || val.endsWith('.mp4') || val.endsWith('.avi')) {
+                    selectedVideos.push(val);
+                }
+            });
+            if (selectedVideos.length === 0) return alert("Najpierw zaznacz pliki WIDEO do pobrania napisów!");
+            
+            document.getElementById('btn-download').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pobieranie...';
+            
+            fetch('/api/download_subs', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({videos: selectedVideos})
+            }).then(r => r.json()).then(data => {
+                document.getElementById('btn-download').innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Pobierz napisy (QNapi)';
+                let successCount = data.results.filter(r => r.success).length;
+                alert(`Pobieranie zakończone!\nUdało się pobrać napisy do ${successCount} z ${data.results.length} plików.`);
+                loadDir(currentPath);
+            });
+        }
+
         function startProcessing() {
             let selectedVideos = [];
             document.querySelectorAll('.file-checkbox:checked').forEach(cb => {
@@ -349,7 +397,11 @@
                 if (srtMatch) {
                     pairs.push({video: vid, srt: srtMatch.path});
                 } else {
-                    return alert(`Brak napisów dla pliku:\n${vid.split('/').pop()}`);
+                    if(confirm(`Brak pliku .srt dla filmu:\n${vid.split('/').pop()}\n\nCzy chcesz, żeby skrypt spróbował wyciągnąć napisy wbudowane w sam plik wideo? (działa m.in z MKV)`)) {
+                        pairs.push({video: vid, srt: 'EMBEDDED'});
+                    } else {
+                        return;
+                    }
                 }
             }
 
@@ -378,7 +430,22 @@
                     let consoleBox = document.getElementById('console-box');
                     let isScrolledToBottom = consoleBox.scrollHeight - consoleBox.clientHeight <= consoleBox.scrollTop + 1;
                     
-                    consoleBox.innerText = data.output.join('\n');
+                    let outText = data.output.join('\n');
+                    consoleBox.innerText = outText;
+                    
+                    // Szukamy w logach informacji o postępie np. "Postęp: 50/150"
+                    let progressMatches = [...outText.matchAll(/Postęp: (\d+)\/(\d+)/g)];
+                    if (progressMatches.length > 0) {
+                        let lastMatch = progressMatches[progressMatches.length - 1];
+                        let current = parseInt(lastMatch[1]);
+                        let total = parseInt(lastMatch[2]);
+                        let percent = (current / total) * 100;
+                        document.getElementById('progress-container').style.display = 'block';
+                        document.getElementById('progress-bar').style.width = percent + '%';
+                    } else {
+                        document.getElementById('progress-container').style.display = 'none';
+                    }
+
                     if (isScrolledToBottom) {
                         consoleBox.scrollTop = consoleBox.scrollHeight;
                     }
@@ -386,13 +453,16 @@
                     if(data.is_processing) {
                         document.getElementById('btn-start').style.display = 'none';
                         document.getElementById('btn-delete').style.display = 'none';
+                        document.getElementById('btn-download').style.display = 'none';
                         document.getElementById('btn-stop').style.display = 'flex';
                         fileNameSpan.classList.add('processing-active');
                     } else {
                         document.getElementById('btn-start').style.display = 'flex';
                         document.getElementById('btn-delete').style.display = 'flex';
+                        document.getElementById('btn-download').style.display = 'flex';
                         document.getElementById('btn-stop').style.display = 'none';
                         fileNameSpan.classList.remove('processing-active');
+                        document.getElementById('progress-container').style.display = 'none';
                     }
                 }).catch(() => {});
         }

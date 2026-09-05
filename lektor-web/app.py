@@ -92,6 +92,23 @@ def delete_files():
             except: pass
     return jsonify({'status': 'ok'})
 
+@app.route('/api/download_subs', methods=['POST'])
+def download_subs():
+    videos = request.json.get('videos', [])
+    results = []
+    for vid in videos:
+        try:
+            # Używamy qnapi z opcją -q (quiet) i -c (nie pokazuj GUI)
+            ret = subprocess.run(['qnapi', '-c', vid], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # qnapi pobiera plik z napisami do tego samego folderu (.txt lub .srt)
+            # jeśli pobierze .txt, warto by to zmienić na srt albo obsłużyć w skrypcie, 
+            # ale qnapi domyślnie konwertuje do srt! (-f srt domyślnie w nowszych wersjach)
+            subprocess.run(['qnapi', '-c', '-f', 'srt', vid])
+            results.append({'file': vid, 'success': ret.returncode == 0})
+        except Exception as e:
+            results.append({'file': vid, 'success': False, 'error': str(e)})
+    return jsonify({'status': 'ok', 'results': results})
+
 @app.route('/api/start', methods=['POST'])
 def start():
     global is_processing
