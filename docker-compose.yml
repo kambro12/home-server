@@ -95,6 +95,25 @@ services:
       - /mnt/media:/mnt/media
 
   # --- POBIERANIE I AUTOMATYZACJA ---
+  jdownloader:
+    image: jlesage/jdownloader-2:latest
+    container_name: jdownloader
+    restart: unless-stopped
+    ports:
+      - "5800:5800"
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Warsaw
+      - MYJDOWNLOADER_EMAIL=brodathc@gmail.com
+      - MYJDOWNLOADER_PASSWORD=JCE6JR
+      - MYJDOWNLOADER_DEVICE_NAME=Serwer_Dell
+    volumes:
+      - ./config_jdownloader:/config
+      - /mnt/media:/mnt/media
+    networks:
+      - serwer-network
+
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
@@ -405,3 +424,41 @@ services:
       - "9000:9000"
     networks:
       - serwer-network
+
+  # --- KAMERY I ALARMY ---
+  ftp_kamery:
+    image: fauria/vsftpd
+    container_name: ftp_kamery
+    restart: unless-stopped
+    ports:
+      - "21:21"
+      - "21100-21110:21100-21110"
+    volumes:
+      - /mnt/media/kamery_alarmy:/home/vsftpd
+    environment:
+      - FTP_USER=kamera
+      - FTP_PASS=kamera123
+      - PASV_ADDRESS=192.168.1.32
+      - PASV_MIN_PORT=21100
+      - PASV_MAX_PORT=21110
+      - LOCAL_UMASK=022
+    networks:
+      - serwer-network
+
+  kamery_galeria:
+    image: filebrowser/filebrowser
+    container_name: kamery_galeria
+    restart: unless-stopped
+    ports:
+      - "8082:80"
+    volumes:
+      - /mnt/media/kamery_alarmy:/srv
+      - fb_kamery_db:/database
+    environment:
+      - FB_DATABASE=/database/filebrowser.db
+    networks:
+      - serwer-network
+
+volumes:
+  fb_kamery_db:
+    external: true
